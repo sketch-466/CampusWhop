@@ -2,11 +2,19 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
-  title: "CampusWhop — The Economic Layer of Nigerian Campuses",
-  description: "Earn money, find jobs, sell products, build reputation. Built for students at FUNAI and beyond.",
+  title: {
+    default: "CampusWhop — The Student Economy",
+    template: "%s | CampusWhop",
+  },
+  description:
+    "Buy, sell, find jobs, and build your reputation at FUNAI. CampusWhop is the economic operating system for Nigerian students.",
+  keywords: ["FUNAI", "student marketplace", "campus jobs", "Nigeria", "student economy"],
 };
 
 export default function RootLayout({
@@ -15,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>
+    <html lang="en" className="dark">
+      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-background`}>
         {children}
       </body>
     </html>
