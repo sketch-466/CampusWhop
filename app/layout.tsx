@@ -7,7 +7,6 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "CampusWhop — The Economic Layer of Nigerian Campuses",
   description: "Earn money, find jobs, sell products, build reputation. Built for students at FUNAI and beyond.",
-  keywords: ["campus marketplace", "student jobs Nigeria", "FUNAI", "freelance", "student entrepreneurship"],
 };
 
 export default function RootLayout({
@@ -17,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans min-h-screen`}>
+      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>
         {children}
       </body>
     </html>
