@@ -52,10 +52,7 @@ export async function registerAction(
 }
 
 // ─── LOGIN ───────────────────────────────────────────────────
-export async function loginAction(
-  prevState: { error: string },
-  formData: FormData
-) {
+export async function loginAction(formData: FormData) {
   const supabase = await createClient();
 
   const email = formData.get("email") as string;
@@ -83,12 +80,13 @@ export async function loginAction(
     return { error: "Something went wrong. Please try again." };
   }
 
-  const { data: profile } = await supabase
+  const { data: profileData } = await supabase
     .from("profiles")
     .select("onboarding_completed")
     .eq("id", user.id)
-    .returns<{ onboarding_completed: boolean }>()
     .single();
+
+  const profile = profileData as { onboarding_completed: boolean } | null;
 
   if (!profile?.onboarding_completed) {
     redirect("/onboarding");
@@ -96,7 +94,6 @@ export async function loginAction(
 
   redirect("/dashboard");
 }
-
 // ─── LOGOUT ──────────────────────────────────────────────────
 export async function logoutAction() {
   const supabase = await createClient();
