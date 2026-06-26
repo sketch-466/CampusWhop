@@ -87,6 +87,7 @@ export async function loginAction(
     .from("profiles")
     .select("onboarding_completed")
     .eq("id", user.id)
+    .returns<{ onboarding_completed: boolean }>()
     .single();
 
   if (!profile?.onboarding_completed) {
@@ -196,6 +197,7 @@ export async function onboardingAction(
     .select("id")
     .eq("username", username)
     .neq("id", user.id)
+    .returns<{ id: string }>()
     .single();
 
   if (existing) {
