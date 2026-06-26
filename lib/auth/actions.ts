@@ -216,7 +216,8 @@ export async function onboardingAction(
     return { error: "This username is already taken. Please choose another." };
   }
 
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from("profiles")
     .update({
       username,
