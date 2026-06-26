@@ -83,17 +83,14 @@ export async function loginAction(
     return { error: "Something went wrong. Please try again." };
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("onboarding_completed")
     .eq("id", user.id)
+    .returns<{ onboarding_completed: boolean }[]>()
     .single();
 
-  if (profileError || !profile) {
-    return { error: "Profile not found. Please contact support." };
-  }
-
-  if (!profile.onboarding_completed) {
+  if (!profile?.onboarding_completed) {
     redirect("/onboarding");
   }
 
