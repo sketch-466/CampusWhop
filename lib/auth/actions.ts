@@ -83,18 +83,23 @@ export async function loginAction(
     return { error: "Something went wrong. Please try again." };
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("onboarding_completed")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.onboarding_completed) {
+  if (profileError || !profile) {
+    return { error: "Profile not found. Please contact support." };
+  }
+
+  if (!profile.onboarding_completed) {
     redirect("/onboarding");
   }
 
   redirect("/dashboard");
 }
+
 
 // ─── LOGOUT ──────────────────────────────────────────────────
 export async function logoutAction() {
