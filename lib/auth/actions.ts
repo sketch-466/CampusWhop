@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 
 // ─── REGISTER ───────────────────────────────────────────────
 export async function registerAction(
@@ -10,8 +9,6 @@ export async function registerAction(
   formData: FormData
 ) {
   const supabase = await createClient();
-  const headersList = await headers();
-  const origin = headersList.get("origin");
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -34,7 +31,7 @@ export async function registerAction(
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/verify`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify`,
       data: {
         full_name: fullName,
       },
@@ -118,8 +115,6 @@ export async function forgotPasswordAction(
   formData: FormData
 ) {
   const supabase = await createClient();
-  const headersList = await headers();
-  const origin = headersList.get("origin");
 
   const email = formData.get("email") as string;
 
@@ -128,7 +123,7 @@ export async function forgotPasswordAction(
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/reset-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
   });
 
   if (error) {
