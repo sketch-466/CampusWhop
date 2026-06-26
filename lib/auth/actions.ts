@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 
 // ─── REGISTER ───────────────────────────────────────────────
 export async function registerAction(
-  prevState: { error: string },
+  _prevState: { error: string },
   formData: FormData
 ) {
   const supabase = await createClient();
@@ -52,7 +52,10 @@ export async function registerAction(
 }
 
 // ─── LOGIN ───────────────────────────────────────────────────
-export async function loginAction(formData: FormData) {
+export async function loginAction(
+  _prevState: { error: string },
+  formData: FormData
+) {
   const supabase = await createClient();
 
   const email = formData.get("email") as string;
@@ -80,13 +83,12 @@ export async function loginAction(formData: FormData) {
     return { error: "Something went wrong. Please try again." };
   }
 
-  const { data: profileData } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("onboarding_completed")
     .eq("id", user.id)
+    .returns<{ onboarding_completed: boolean }>()
     .single();
-
-  const profile = profileData as { onboarding_completed: boolean } | null;
 
   if (!profile?.onboarding_completed) {
     redirect("/onboarding");
@@ -94,6 +96,7 @@ export async function loginAction(formData: FormData) {
 
   redirect("/dashboard");
 }
+
 // ─── LOGOUT ──────────────────────────────────────────────────
 export async function logoutAction() {
   const supabase = await createClient();
@@ -103,7 +106,7 @@ export async function logoutAction() {
 
 // ─── FORGOT PASSWORD ─────────────────────────────────────────
 export async function forgotPasswordAction(
-  prevState: { error?: string; success?: string },
+  _prevState: { error?: string; success?: string },
   formData: FormData
 ) {
   const supabase = await createClient();
@@ -129,7 +132,7 @@ export async function forgotPasswordAction(
 
 // ─── RESET PASSWORD ──────────────────────────────────────────
 export async function resetPasswordAction(
-  prevState: { error: string },
+  _prevState: { error: string },
   formData: FormData
 ) {
   const supabase = await createClient();
@@ -160,7 +163,7 @@ export async function resetPasswordAction(
 
 // ─── ONBOARDING ──────────────────────────────────────────────
 export async function onboardingAction(
-  prevState: { error: string },
+  _prevState: { error: string },
   formData: FormData
 ) {
   const supabase = await createClient();
