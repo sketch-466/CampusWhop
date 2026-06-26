@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
+const APP_URL = "https://campus-whop-theta.vercel.app";
+
 // ─── REGISTER ───────────────────────────────────────────────
 export async function registerAction(
   _prevState: { error: string },
@@ -31,7 +33,7 @@ export async function registerAction(
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify`,
+      emailRedirectTo: `${APP_URL}/auth/verify`,
       data: {
         full_name: fullName,
       },
@@ -123,7 +125,7 @@ export async function forgotPasswordAction(
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+    redirectTo: `${APP_URL}/auth/reset-password`,
   });
 
   if (error) {
