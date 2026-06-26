@@ -77,20 +77,28 @@ export async function loginAction(
     return { error: error.message };
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { error: "Something went wrong. Please try again." };
   }
 
-  const { data: profile } = await supabase
+  const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("onboarding_completed")
     .eq("id", user.id)
-    .returns<{ onboarding_completed: boolean }>()
     .single();
 
-  if (!profile?.onboarding_completed) {
+  if (profileError || !profileData) {
+    redirect("/onboarding");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profile = profileData as any;
+
+  if (!profile.onboarding_completed) {
     redirect("/onboarding");
   }
 
@@ -168,7 +176,9 @@ export async function onboardingAction(
 ) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/auth/login");
@@ -182,25 +192,27 @@ export async function onboardingAction(
   const matricNumber = formData.get("matric_number") as string;
 
   if (!username || !universityId || !department || !level) {
-    return { error: "Username, university, department and level are required." };
+    return {
+      error: "Username, university, department and level are required.",
+    };
   }
 
   const usernameRegex = /^[a-z0-9_]{3,20}$/;
   if (!usernameRegex.test(username)) {
     return {
-      error: "Username must be 3-20 characters, letters, numbers and underscores only.",
+      error:
+        "Username must be 3-20 characters, letters, numbers and underscores only.",
     };
   }
 
-  const { data: existing } = await supabase
+  const { data: existingData } = await supabase
     .from("profiles")
     .select("id")
     .eq("username", username)
-    .neq("id", user.id)
-    .returns<{ id: string }>()
-    .single();
+    .neq("id", user!.id)
+    .maybeSingle();
 
-  if (existing) {
+  if (existingData) {
     return { error: "This username is already taken. Please choose another." };
   }
 
@@ -215,7 +227,7 @@ export async function onboardingAction(
       matric_number: matricNumber || null,
       onboarding_completed: true,
     })
-    .eq("id", user.id);
+    .eq("id", user!.id);
 
   if (error) {
     return { error: error.message };
