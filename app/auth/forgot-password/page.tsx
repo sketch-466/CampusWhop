@@ -6,7 +6,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 import { forgotPasswordAction } from "@/lib/auth/actions";
 
-const initialState = { error: "", success: "" };
+const initialState: { error?: string; success?: string } = {};
 
 export default function ForgotPasswordPage() {
   const [state, formAction] = useActionState(forgotPasswordAction, initialState);

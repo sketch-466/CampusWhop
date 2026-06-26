@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
 // ─── REGISTER ───────────────────────────────────────────────
-export async function registerAction(formData: FormData) {
+export async function registerAction(
+  prevState: { error: string },
+  formData: FormData
+) {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin");
@@ -49,7 +52,10 @@ export async function registerAction(formData: FormData) {
 }
 
 // ─── LOGIN ───────────────────────────────────────────────────
-export async function loginAction(formData: FormData) {
+export async function loginAction(
+  prevState: { error: string },
+  formData: FormData
+) {
   const supabase = await createClient();
 
   const email = formData.get("email") as string;
@@ -98,7 +104,10 @@ export async function logoutAction() {
 }
 
 // ─── FORGOT PASSWORD ─────────────────────────────────────────
-export async function forgotPasswordAction(formData: FormData) {
+export async function forgotPasswordAction(
+  prevState: { error?: string; success?: string },
+  formData: FormData
+) {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin");
@@ -121,7 +130,10 @@ export async function forgotPasswordAction(formData: FormData) {
 }
 
 // ─── RESET PASSWORD ──────────────────────────────────────────
-export async function resetPasswordAction(formData: FormData) {
+export async function resetPasswordAction(
+  prevState: { error: string },
+  formData: FormData
+) {
   const supabase = await createClient();
 
   const password = formData.get("password") as string;
@@ -149,7 +161,10 @@ export async function resetPasswordAction(formData: FormData) {
 }
 
 // ─── ONBOARDING ──────────────────────────────────────────────
-export async function onboardingAction(formData: FormData) {
+export async function onboardingAction(
+  prevState: { error: string },
+  formData: FormData
+) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
