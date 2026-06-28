@@ -77,7 +77,9 @@ export default function RegisterPage() {
         {/* Error */}
         {state?.error && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
-            <p className="text-destructive text-sm">{state.error}</p>
+            <p className="text-destructive text-sm">
+              {typeof state.error === "string" ? state.error : JSON.stringify(state.error)}
+            </p>
           </div>
         )}
 

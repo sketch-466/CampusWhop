@@ -29,7 +29,7 @@ export async function registerAction(
     return { error: "Please enter a valid email address." };
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -41,10 +41,21 @@ export async function registerAction(
   });
 
   if (error) {
-    if (error.message.includes("already registered")) {
+    console.error("Supabase signUp error:", error);
+
+    if (error.message?.includes("already registered") || error.message?.includes("User already registered")) {
       return { error: "An account with this email already exists." };
     }
-    return { error: error.message };
+
+    if (error.message?.includes("rate limit")) {
+      return { error: "Too many attempts. Please try again later." };
+    }
+
+    return { error: error.message || "Something went wrong. Please try again." };
+  }
+
+  if (data?.user?.identities?.length === 0) {
+    return { error: "An account with this email already exists." };
   }
 
   redirect("/auth/verify");
@@ -94,8 +105,7 @@ export async function loginAction(
     redirect("/onboarding");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profile = profileData as any;
+  const profile = profileData as Record<string, unknown>;
 
   if (!profile.onboarding_completed) {
     redirect("/onboarding");
@@ -206,15 +216,14 @@ export async function onboardingAction(
     .from("profiles")
     .select("id")
     .eq("username", username)
-    .neq("id", user!.id)
+    .neq("id", user.id)
     .maybeSingle();
 
   if (existingData) {
     return { error: "This username is already taken. Please choose another." };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("profiles")
     .update({
       username,
@@ -225,7 +234,7 @@ export async function onboardingAction(
       matric_number: matricNumber || null,
       onboarding_completed: true,
     })
-    .eq("id", user!.id);
+    .eq("id", user.id);
 
   if (error) {
     return { error: error.message };
