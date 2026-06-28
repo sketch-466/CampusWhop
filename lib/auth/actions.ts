@@ -33,7 +33,7 @@ export async function registerAction(
     email,
     password,
     options: {
-      emailRedirectTo: `${APP_URL}/auth/verify`,
+      emailRedirectTo: `${APP_URL}/auth/confirm`,
       data: {
         full_name: fullName,
       },
