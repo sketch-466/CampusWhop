@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
@@ -19,7 +19,7 @@ import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validations/
 import { resetPassword } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [isLoading, setIsLoading] = useState(false);
@@ -61,21 +61,19 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-brand-500">CampusWhop</h1>
-          <p className="text-muted-foreground">Set a new password</p>
+          <h1 className="text-3xl font-bold text-emerald-500">CampusWhop</h1>
+          <p className="text-zinc-400">Set a new password</p>
         </div>
 
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Reset Password</CardTitle>
-            <CardDescription>
-              Enter your new password below
-            </CardDescription>
+            <CardDescription>Enter your new password below</CardDescription>
           </CardHeader>
           <CardContent>
             {success ? (
               <div className="text-center space-y-4">
-                <div className="rounded-lg bg-brand-50 p-4 text-brand-700">
+                <div className="rounded-lg bg-emerald-950 p-4 text-emerald-400">
                   <p className="font-medium">Password reset successful!</p>
                   <p className="text-sm mt-1">
                     You can now log in with your new password.
@@ -96,12 +94,10 @@ export default function ResetPasswordPage() {
                     type="password"
                     placeholder="••••••••"
                     {...register("password")}
-                    className={cn(errors.password && "border-destructive")}
+                    className={cn(errors.password && "border-red-500")}
                   />
                   {errors.password && (
-                    <p className="text-sm text-destructive">
-                      {errors.password.message}
-                    </p>
+                    <p className="text-sm text-red-400">{errors.password.message}</p>
                   )}
                 </div>
 
@@ -112,28 +108,18 @@ export default function ResetPasswordPage() {
                     type="password"
                     placeholder="••••••••"
                     {...register("confirmPassword")}
-                    className={cn(
-                      errors.confirmPassword && "border-destructive"
-                    )}
+                    className={cn(errors.confirmPassword && "border-red-500")}
                   />
                   {errors.confirmPassword && (
-                    <p className="text-sm text-destructive">
-                      {errors.confirmPassword.message}
-                    </p>
+                    <p className="text-sm text-red-400">{errors.confirmPassword.message}</p>
                   )}
                 </div>
 
                 {error && (
-                  <p className="text-sm text-destructive text-center">
-                    {error}
-                  </p>
+                  <p className="text-sm text-red-400 text-center">{error}</p>
                 )}
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                >
+                <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Resetting..." : "Reset Password"}
                 </Button>
               </form>
@@ -142,5 +128,17 @@ export default function ResetPasswordPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
