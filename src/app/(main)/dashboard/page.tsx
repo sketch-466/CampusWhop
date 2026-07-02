@@ -40,7 +40,7 @@ export default async function DashboardPage() {
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : user.email[0].toUpperCase();
+    : (user.email ?? "U")[0].toUpperCase();
 
   const stats = [
     { label: "Listings", value: "0" },

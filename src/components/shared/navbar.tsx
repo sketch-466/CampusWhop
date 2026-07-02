@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
 import {
   Avatar,
@@ -10,12 +9,6 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar";
 import {
-  Briefcase,
-  ShoppingBag,
-  Store,
-  Home,
-  Star,
-  GraduationCap,
   User,
   Settings,
   LogOut,
@@ -32,7 +25,6 @@ interface NavbarProps {
 
 export function Navbar({ user }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const router = useRouter();
 
   const initials = user.full_name
     ? user.full_name
@@ -41,7 +33,7 @@ export function Navbar({ user }: NavbarProps) {
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : user.email[0].toUpperCase();
+    : (user.email ?? "U")[0].toUpperCase();
 
   const handleSignOut = async () => {
     await signOut();
