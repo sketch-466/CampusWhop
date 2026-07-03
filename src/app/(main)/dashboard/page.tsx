@@ -10,6 +10,7 @@ import {
   Star,
   GraduationCap,
   ArrowRight,
+  Plus,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -61,8 +62,8 @@ export default async function DashboardPage() {
       icon: ShoppingBag,
       title: "Browse Market",
       subtitle: "Buy & sell on campus",
-      href: "#",
-      available: false,
+      href: "/marketplace",
+      available: true,
     },
     {
       icon: Store,
@@ -75,8 +76,8 @@ export default async function DashboardPage() {
       icon: ShoppingBag,
       title: "My Listings",
       subtitle: "Manage your products",
-      href: "#",
-      available: false,
+      href: "/marketplace/my-listings",
+      available: true,
     },
     {
       icon: Home,
@@ -125,6 +126,24 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      {/* Sell Something CTA */}
+      <div className="mt-4 rounded-xl border border-emerald-800/50 bg-emerald-900/20 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-emerald-400">Start Selling</h3>
+            <p className="text-sm text-emerald-300/70">
+              List your first item and earn money on campus
+            </p>
+          </div>
+          <Link href="/marketplace/new">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600">
+              <Plus className="h-4 w-4" />
+              Sell Something
+            </span>
+          </Link>
+        </div>
+      </div>
+
       {/* Stats Row */}
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((stat) => (
@@ -170,7 +189,7 @@ export default async function DashboardPage() {
           Start by browsing the marketplace or posting your first listing.
         </p>
         <Link
-          href="#"
+          href="/marketplace"
           className="mt-3 inline-flex items-center gap-1 text-sm text-emerald-400 transition-colors hover:text-emerald-300"
         >
           Browse Marketplace
