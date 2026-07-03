@@ -45,7 +45,7 @@ export default async function AdminListingsPage() {
 
       {error ? (
         <p className="mt-4 text-red-400">{error}</p>
-      ) : listings.length === 0 ? (
+      ) : !listings || listings.length === 0 ? (
         <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 text-center">
           <p className="text-zinc-400">No pending listings to review.</p>
         </div>
