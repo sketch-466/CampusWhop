@@ -1,152 +1,184 @@
-import { redirect } from "next/navigation";
-import { getPendingListings, approveListing, rejectListing } from "@/lib/actions/listings";
-import { createClient } from "@/lib/supabase/server";
-import { Badge } from "@/components/ui/badge";
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCircle, XCircle, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import Image from "next/image";
 
-export default async function AdminListingsPage() {
-  const supabase = await createClient();
+interface Listing {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  status: "pending" | "active" | "rejected";
+  images: string[];
+  created_at: string;
+  seller_id: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  } | null;
+}
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function AdminListingsPage() {
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const supabase = createClient();
 
-  if (!user) {
-    redirect("/login");
+  useEffect(() => {
+    fetchPendingListings();
+  }, []);
+
+  async function fetchPendingListings() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("listings")
+      .select(`
+        *,
+        profiles:seller_id (
+          full_name,
+          email
+        )
+      `)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast.error("Failed to load listings");
+      console.error(error);
+    } else {
+      setListings(data || []);
+    }
+    setLoading(false);
   }
 
-  // Check admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
+  async function approveListing(id: string) {
+    setActionLoading(id);
+    const { error } = await supabase
+      .from("listings")
+      .update({ status: "active" })
+      .eq("id", id);
 
-  if (!profile?.is_admin) {
-    redirect("/dashboard");
+    if (error) {
+      toast.error("Failed to approve listing");
+      console.error(error);
+    } else {
+      toast.success("Listing approved!");
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    }
+    setActionLoading(null);
   }
 
-  const { listings, error } = await getPendingListings();
+  async function rejectListing(id: string) {
+    setActionLoading(id);
+    const { error } = await supabase
+      .from("listings")
+      .update({ status: "rejected" })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Failed to reject listing");
+      console.error(error);
+    } else {
+      toast.success("Listing rejected");
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    }
+    setActionLoading(null);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <Link
-        href="/dashboard"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Dashboard
-      </Link>
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+          <p className="text-zinc-400 mt-1">Review and approve pending listings</p>
+        </div>
+        <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+          {listings.length} Pending
+        </Badge>
+      </div>
 
-      <h1 className="text-2xl font-bold text-white">Admin: Pending Listings</h1>
-
-      {error ? (
-        <p className="mt-4 text-red-400">{error}</p>
-      ) : !listings || listings.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 text-center">
-          <p className="text-zinc-400">No pending listings to review.</p>
+      {listings.length === 0 ? (
+        <div className="text-center py-16 bg-zinc-900/50 rounded-xl border border-zinc-800">
+          <p className="text-zinc-400 text-lg">No pending listings to review</p>
+          <p className="text-zinc-500 text-sm mt-2">All caught up! Check back later.</p>
         </div>
       ) : (
-        <div className="mt-6 space-y-4">
-          {listings.map((listing: any) => (
+        <div className="space-y-4">
+          {listings.map((listing) => (
             <div
               key={listing.id}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4"
+              className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 flex gap-5"
             >
-              <div className="flex items-start gap-4">
-                <div className="h-20 w-20 shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
-                  {listing.images && listing.images.length > 0 ? (
-                    <img
-                      src={listing.images[0]}
-                      alt={listing.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-zinc-600">
-                      No image
-                    </div>
-                  )}
+              {/* Image */}
+              <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                {listing.images && listing.images.length > 0 ? (
+                  <Image
+                    src={listing.images[0]}
+                    alt={listing.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                    No image
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white truncate">
+                      {listing.title}
+                    </h3>
+                    <p className="text-emerald-400 font-medium mt-1">
+                      ₦{listing.price.toLocaleString()}
+                    </p>
+                    <p className="text-zinc-500 text-sm mt-1">
+                      by {listing.profiles?.full_name || "Unknown"} · {" "}
+                      {listing.profiles?.email || "No email"}
+                    </p>
+                  </div>
+                  <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                    Pending
+                  </Badge>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-white">{listing.title}</h3>
-                    <Badge variant="warning">Pending</Badge>
-                  </div>
-                  <p className="text-sm text-emerald-500">
-                    ₦{listing.price.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    {listing.category} · {listing.product_type}
-                  </p>
-                  <p className="mt-2 text-sm text-zinc-400 line-clamp-2">
-                    {listing.description}
-                  </p>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      {listing.seller?.avatar_url && (
-                        <AvatarImage
-                          src={listing.seller.avatar_url}
-                          alt={listing.seller.full_name}
-                        />
-                      )}
-                      <AvatarFallback className="text-[10px]">
-                        {listing.seller?.full_name
-                          ? listing.seller.full_name
-                              .split(" ")
-                              .map((n: string) => n[0])
-                              .join("")
-                              .toUpperCase()
-                              .slice(0, 2)
-                          : "S"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs text-zinc-400">
-                      {listing.seller?.full_name || "Unknown"} ·{" "}
-                      {listing.seller?.university || ""}
-                    </span>
-                    <span className="text-xs text-zinc-600">
-                      {listing.seller?.email || ""}
-                    </span>
-                  </div>
+                <p className="text-zinc-400 text-sm mt-3 line-clamp-2">
+                  {listing.description}
+                </p>
 
-                  <div className="mt-4 flex gap-2">
-                    <form
-                      action={async () => {
-                        "use server";
-                        await approveListing(listing.id);
-                      }}
-                    >
-                      <Button
-                        type="submit"
-                        size="sm"
-                        className="gap-1 bg-emerald-500 hover:bg-emerald-600"
-                      >
-                        <CheckCircle className="h-3.5 w-3.5" />
-                        Approve
-                      </Button>
-                    </form>
-
-                    <form
-                      action={async () => {
-                        "use server";
-                        await rejectListing(listing.id, "Does not meet marketplace guidelines");
-                      }}
-                    >
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 text-red-400 hover:bg-red-900/20"
-                      >
-                        <XCircle className="h-3.5 w-3.5" />
-                        Reject
-                      </Button>
-                    </form>
-                  </div>
+                <div className="flex gap-3 mt-4">
+                  <Button
+                    onClick={() => approveListing(listing.id)}
+                    disabled={actionLoading === listing.id}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    size="sm"
+                  >
+                    {actionLoading === listing.id ? "Processing..." : "Approve"}
+                  </Button>
+                  <Button
+                    onClick={() => rejectListing(listing.id)}
+                    disabled={actionLoading === listing.id}
+                    variant="outline"
+                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    size="sm"
+                  >
+                    Reject
+                  </Button>
                 </div>
               </div>
             </div>

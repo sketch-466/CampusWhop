@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ShoppingBag,
   LayoutDashboard,
+  Shield,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -22,6 +23,7 @@ interface NavbarProps {
     full_name: string | null;
     avatar_url: string | null;
     email: string;
+    is_admin?: boolean; // ← Added
   };
 }
 
@@ -65,6 +67,17 @@ export function Navbar({ user }: NavbarProps) {
               <ShoppingBag className="inline h-4 w-4 mr-1" />
               Marketplace
             </Link>
+            
+            {/* Admin Link — only visible when is_admin is true */}
+            {user.is_admin && (
+              <Link
+                href="/admin/listings"
+                className="text-sm text-amber-400 transition-colors hover:text-amber-300"
+              >
+                <Shield className="inline h-4 w-4 mr-1" />
+                Admin
+              </Link>
+            )}
           </div>
 
           <div className="relative">
@@ -107,6 +120,19 @@ export function Navbar({ user }: NavbarProps) {
                     <ShoppingBag className="h-4 w-4" />
                     Marketplace
                   </Link>
+                  
+                  {/* Admin Panel in dropdown — only visible when is_admin is true */}
+                  {user.is_admin && (
+                    <Link
+                      href="/admin/listings"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  )}
+                  
                   <button
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
                     onClick={() => {
