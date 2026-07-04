@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import Image from "next/image";
 
 interface Listing {
@@ -26,11 +25,20 @@ export default function AdminListingsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
     fetchPendingListings();
   }, []);
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   async function fetchPendingListings() {
     setLoading(true);
@@ -47,7 +55,7 @@ export default function AdminListingsPage() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error("Failed to load listings");
+      setToast({ message: "Failed to load listings", type: "error" });
       console.error(error);
     } else {
       setListings(data || []);
@@ -63,10 +71,10 @@ export default function AdminListingsPage() {
       .eq("id", id);
 
     if (error) {
-      toast.error("Failed to approve listing");
+      setToast({ message: "Failed to approve listing", type: "error" });
       console.error(error);
     } else {
-      toast.success("Listing approved!");
+      setToast({ message: "Listing approved!", type: "success" });
       setListings((prev) => prev.filter((l) => l.id !== id));
     }
     setActionLoading(null);
@@ -80,10 +88,10 @@ export default function AdminListingsPage() {
       .eq("id", id);
 
     if (error) {
-      toast.error("Failed to reject listing");
+      setToast({ message: "Failed to reject listing", type: "error" });
       console.error(error);
     } else {
-      toast.success("Listing rejected");
+      setToast({ message: "Listing rejected", type: "success" });
       setListings((prev) => prev.filter((l) => l.id !== id));
     }
     setActionLoading(null);
@@ -99,6 +107,19 @@ export default function AdminListingsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
+            toast.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
