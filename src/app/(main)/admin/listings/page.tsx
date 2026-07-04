@@ -125,9 +125,8 @@ export default function AdminListingsPage() {
           <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
           <p className="text-zinc-400 mt-1">Review and approve pending listings</p>
         </div>
-        <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
-          {listings.length} Pending
-        </Badge>
+        
+        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20"></Badge>
       </div>
 
       {listings.length === 0 ? (
