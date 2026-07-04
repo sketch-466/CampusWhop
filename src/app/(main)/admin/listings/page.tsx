@@ -32,7 +32,6 @@ export default function AdminListingsPage() {
     fetchPendingListings();
   }, []);
 
-  // Auto-hide toast after 3 seconds
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
@@ -107,7 +106,6 @@ export default function AdminListingsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Toast Notification */}
       {toast && (
         <div
           className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
@@ -125,8 +123,9 @@ export default function AdminListingsPage() {
           <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
           <p className="text-zinc-400 mt-1">Review and approve pending listings</p>
         </div>
-        
-        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20"></Badge>
+        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20">
+          {listings.length} Pending
+        </Badge>
       </div>
 
       {listings.length === 0 ? (
@@ -141,7 +140,6 @@ export default function AdminListingsPage() {
               key={listing.id}
               className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 flex gap-5"
             >
-              {/* Image */}
               <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
                 {listing.images && listing.images.length > 0 ? (
                   <Image
@@ -157,7 +155,6 @@ export default function AdminListingsPage() {
                 )}
               </div>
 
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -172,7 +169,7 @@ export default function AdminListingsPage() {
                       {listing.profiles?.email || "No email"}
                     </p>
                   </div>
-                  <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                  <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20">
                     Pending
                   </Badge>
                 </div>
