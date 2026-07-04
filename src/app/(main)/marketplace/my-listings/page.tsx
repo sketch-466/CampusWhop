@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft, Trash2 } from "lucide-react";
 
-const statusColors: Record<string, string> = {
+const statusColors: Record<string, "default" | "success" | "warning" | "destructive"> = {
   pending: "warning",
   active: "success",
   rejected: "destructive",
@@ -37,7 +37,7 @@ export default async function MyListingsPage() {
 
       {error ? (
         <p className="text-red-400">{error}</p>
-      ) : listings.length === 0 ? (
+      ) : !listings || listings.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">
           <p className="text-zinc-400">You haven't created any listings yet.</p>
           <Link href="/marketplace/new">
@@ -75,13 +75,7 @@ export default async function MyListingsPage() {
                 </p>
                 <div className="mt-1 flex items-center gap-2">
                   <Badge
-                    variant={
-                      (statusColors[listing.status] as
-                        | "default"
-                        | "success"
-                        | "warning"
-                        | "destructive") || "default"
-                    }
+                    variant={statusColors[listing.status] || "default"}
                   >
                     {listing.status}
                   </Badge>

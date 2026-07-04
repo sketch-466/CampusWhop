@@ -40,7 +40,7 @@ export default async function OrdersPage() {
         <TabsContent value="buying">
           {error ? (
             <p className="text-red-400">{error}</p>
-          ) : buying.length === 0 ? (
+          ) : !buying || buying.length === 0 ? (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 text-center">
               <p className="text-zinc-400">No orders yet.</p>
               <Link href="/marketplace">
@@ -61,7 +61,7 @@ export default async function OrdersPage() {
         <TabsContent value="selling">
           {error ? (
             <p className="text-red-400">{error}</p>
-          ) : selling.length === 0 ? (
+          ) : !selling || selling.length === 0 ? (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 text-center">
               <p className="text-zinc-400">No sales yet.</p>
             </div>

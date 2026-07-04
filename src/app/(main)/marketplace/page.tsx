@@ -105,7 +105,7 @@ export default async function MarketplacePage({
       {/* Listings Grid */}
       {error ? (
         <p className="text-center text-red-400">{error}</p>
-      ) : listings.length === 0 ? (
+      ) : !listings || listings.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">
           <p className="text-zinc-400">No listings found.</p>
           <p className="mt-1 text-sm text-zinc-500">
@@ -114,7 +114,7 @@ export default async function MarketplacePage({
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {listings.map((listing: any) => (
+          {(listings as any[]).map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
