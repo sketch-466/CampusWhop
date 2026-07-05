@@ -39,7 +39,13 @@ export async function updateSession(request: NextRequest) {
   '/verify',
   '/auth/callback',
   '/marketplace',
+  '/marketplace/',
 ]
+
+// And update the check to use startsWith instead of exact match:
+if (!user && !publicRoutes.some(r => path.startsWith(r))) {
+  return NextResponse.redirect(new URL('/login', request.url))
+}
 
   // If logged in and trying to access auth pages → redirect to dashboard
   if (user && ['/login', '/register'].includes(path)) {
