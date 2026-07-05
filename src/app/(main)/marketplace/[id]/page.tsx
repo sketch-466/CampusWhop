@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getListingById } from "@/lib/actions/listings";
-import { initializeOrder } from "@/lib/actions/orders";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ export default async function ListingDetailPage({
 
   const isOwner = user?.id === listing.seller_id;
 
-  // Null-safe seller access
   const seller = listing.seller ?? { full_name: null, avatar_url: null, university: null }
 
   const initials = seller.full_name
@@ -115,57 +113,4 @@ export default async function ListingDetailPage({
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                {seller.avatar_url && (
-                  <AvatarImage src={seller.avatar_url} alt={seller.full_name || ""} />
-                )}
-                <AvatarFallback className="text-sm">{initials}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium text-white">
-                  {seller.full_name || "Unknown Seller"}
-                </p>
-                <p className="text-xs text-zinc-400">
-                  {seller.university || "University not set"} · ⭐ 0 reputation
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-white">Description</h3>
-            <p className="mt-1 text-sm leading-relaxed text-zinc-400 whitespace-pre-wrap">
-              {listing.description}
-            </p>
-          </div>
-
-          {listing.delivery_note && (
-            <div className="flex items-start gap-2 rounded-lg bg-zinc-900/50 p-3">
-              <Package className="mt-0.5 h-4 w-4 text-zinc-500" />
-              <div>
-                <p className="text-xs font-medium text-zinc-300">Delivery</p>
-                <p className="text-xs text-zinc-500">{listing.delivery_note}</p>
-              </div>
-            </div>
-          )}
-
-          {isOwner ? (
-            <div className="rounded-lg border border-yellow-800 bg-yellow-900/20 p-4">
-              <p className="text-sm text-yellow-400">
-                This is your listing. Buyers will see a "Buy Now" button here.
-              </p>
-            </div>
-          ) : !user ? (
-            <Link href="/login">
-              <Button className="w-full bg-emerald-500 hover:bg-emerald-600">
-                Sign in to Buy
-              </Button>
-            </Link>
-         ) : (
-  <BuyButton listingId={listing.id} price={listing.price} />
-)}
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+                {sell
