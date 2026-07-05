@@ -19,7 +19,7 @@ export default async function MainLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, email")
+    .select("full_name, avatar_url, email, is_admin")
     .eq("id", user.id)
     .single();
 
@@ -30,6 +30,7 @@ export default async function MainLayout({
           full_name: profile?.full_name || null,
           avatar_url: profile?.avatar_url || null,
           email: user.email || "",
+          is_admin: profile?.is_admin || false,
         }}
       />
       <main>{children}</main>
