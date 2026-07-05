@@ -6,7 +6,7 @@ import { initializeOrder } from "@/lib/actions/orders";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Package } from "lucide-react";
+import { ArrowLeft, Package } from "lucide-react";
 
 export default async function ListingDetailPage({
   params,
@@ -21,14 +21,15 @@ export default async function ListingDetailPage({
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const isOwner = user?.id === listing.seller_id;
 
-  const initials = listing.seller.full_name
-    ? listing.seller.full_name
+  // Null-safe seller access
+  const seller = listing.seller ?? { full_name: null, avatar_url: null, university: null }
+
+  const initials = seller.full_name
+    ? seller.full_name
         .split(" ")
         .map((n: string) => n[0])
         .join("")
@@ -99,9 +100,7 @@ export default async function ListingDetailPage({
             <Badge variant="default">
               {categoryLabels[listing.category] || listing.category}
             </Badge>
-            <Badge
-              variant={listing.product_type === "physical" ? "outline" : "success"}
-            >
+            <Badge variant={listing.product_type === "physical" ? "outline" : "success"}>
               {listing.product_type === "physical" ? "Physical" : "Digital"}
             </Badge>
           </div>
@@ -115,20 +114,17 @@ export default async function ListingDetailPage({
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                {listing.seller.avatar_url && (
-                  <AvatarImage
-                    src={listing.seller.avatar_url}
-                    alt={listing.seller.full_name || ""}
-                  />
+                {seller.avatar_url && (
+                  <AvatarImage src={seller.avatar_url} alt={seller.full_name || ""} />
                 )}
                 <AvatarFallback className="text-sm">{initials}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-medium text-white">
-                  {listing.seller.full_name || "Unknown Seller"}
+                  {seller.full_name || "Unknown Seller"}
                 </p>
                 <p className="text-xs text-zinc-400">
-                  {listing.seller.university || ""} · ⭐ 0 reputation
+                  {seller.university || "University not set"} · ⭐ 0 reputation
                 </p>
               </div>
             </div>
@@ -157,6 +153,12 @@ export default async function ListingDetailPage({
                 This is your listing. Buyers will see a "Buy Now" button here.
               </p>
             </div>
+          ) : !user ? (
+            <Link href="/login">
+              <Button className="w-full bg-emerald-500 hover:bg-emerald-600">
+                Sign in to Buy
+              </Button>
+            </Link>
           ) : (
             <form
               action={async () => {
