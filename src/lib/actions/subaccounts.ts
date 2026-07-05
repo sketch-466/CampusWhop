@@ -35,18 +35,12 @@ export async function createSubaccount(data: {
 }) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  // Check if already has subaccount
   const { data: existing } = await supabase
     .from("paystack_subaccounts")
-    .select("*")
+    .select("id")
     .eq("user_id", user.id)
     .single();
 
@@ -55,22 +49,20 @@ export async function createSubaccount(data: {
   }
 
   try {
-    // Create Paystack subaccount - seller gets 90%, platform keeps 10%
     const result = await paystackRequest("/subaccount", {
       method: "POST",
       body: JSON.stringify({
         business_name: data.business_name,
         settlement_bank: data.bank_code,
         account_number: data.account_number,
-        percentage_charge: 90, // Seller receives 90%
+        percentage_charge: 10,
       }),
     });
 
     if (!result.status) {
-      throw new Error(result.message);
+      throw new Error(result.message || "Paystack subaccount creation failed");
     }
 
-    // Store in database
     const { error: dbError } = await supabase
       .from("paystack_subaccounts")
       .insert({
@@ -82,14 +74,14 @@ export async function createSubaccount(data: {
       });
 
     if (dbError) {
-      return { error: "Failed to save subaccount" };
+      console.error("Subaccount DB error:", dbError)
+      return { error: `Database error: ${dbError.message}` };
     }
 
     return { success: true, subaccountCode: result.data.subaccount_code };
   } catch (err) {
     return {
-      error:
-        err instanceof Error ? err.message : "Failed to create subaccount",
+      error: err instanceof Error ? err.message : "Failed to create subaccount",
     };
   }
 }
