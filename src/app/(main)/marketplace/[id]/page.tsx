@@ -25,7 +25,11 @@ export default async function ListingDetailPage({
 
   const isOwner = user?.id === listing.seller_id;
 
-  const seller = listing.seller ?? { full_name: null, avatar_url: null, university: null }
+  const seller = listing.seller ?? {
+    full_name: null,
+    avatar_url: null,
+    university: null,
+  };
 
   const initials = seller.full_name
     ? seller.full_name
@@ -60,7 +64,6 @@ export default async function ListingDetailPage({
       </Link>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Image Gallery */}
         <div className="space-y-2">
           <div className="aspect-square rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
             {listing.images && listing.images.length > 0 ? (
@@ -93,7 +96,6 @@ export default async function ListingDetailPage({
           )}
         </div>
 
-        {/* Info */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant="default">
@@ -109,8 +111,62 @@ export default async function ListingDetailPage({
             ₦{listing.price.toLocaleString()}
           </p>
 
-          {/* Seller Card */}
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                {sell
+                {seller.avatar_url && (
+                  <AvatarImage
+                    src={seller.avatar_url}
+                    alt={seller.full_name || ""}
+                  />
+                )}
+                <AvatarFallback className="text-sm">{initials}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium text-white">
+                  {seller.full_name || "Unknown Seller"}
+                </p>
+                <p className="text-xs text-zinc-400">
+                  {seller.university || "University not set"} · ⭐ 0 reputation
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium text-white">Description</h3>
+            <p className="mt-1 text-sm leading-relaxed text-zinc-400 whitespace-pre-wrap">
+              {listing.description}
+            </p>
+          </div>
+
+          {listing.delivery_note && (
+            <div className="flex items-start gap-2 rounded-lg bg-zinc-900/50 p-3">
+              <Package className="mt-0.5 h-4 w-4 text-zinc-500" />
+              <div>
+                <p className="text-xs font-medium text-zinc-300">Delivery</p>
+                <p className="text-xs text-zinc-500">{listing.delivery_note}</p>
+              </div>
+            </div>
+          )}
+
+          {isOwner ? (
+            <div className="rounded-lg border border-yellow-800 bg-yellow-900/20 p-4">
+              <p className="text-sm text-yellow-400">
+                This is your listing. Buyers will see a Buy Now button here.
+              </p>
+            </div>
+          ) : !user ? (
+            <Link href="/login">
+              <Button className="w-full bg-emerald-500 hover:bg-emerald-600">
+                Sign in to Buy
+              </Button>
+            </Link>
+          ) : (
+            <BuyButton listingId={listing.id} price={listing.price} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
