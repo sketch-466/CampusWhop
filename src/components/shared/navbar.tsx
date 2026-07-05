@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   LayoutDashboard,
   Shield,
+  CreditCard,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -23,7 +24,7 @@ interface NavbarProps {
     full_name: string | null;
     avatar_url: string | null;
     email: string;
-    is_admin?: boolean; // ← Added
+    is_admin?: boolean;
   };
 }
 
@@ -51,7 +52,7 @@ export function Navbar({ user }: NavbarProps) {
         </Link>
 
         <div className="flex items-center gap-4">
-          {/* Nav Links */}
+          {/* Desktop Nav Links */}
           <div className="hidden items-center gap-3 sm:flex">
             <Link
               href="/dashboard"
@@ -67,8 +68,6 @@ export function Navbar({ user }: NavbarProps) {
               <ShoppingBag className="inline h-4 w-4 mr-1" />
               Marketplace
             </Link>
-            
-            {/* Admin Link — only visible when is_admin is true */}
             {user.is_admin && (
               <Link
                 href="/admin/listings"
@@ -80,6 +79,7 @@ export function Navbar({ user }: NavbarProps) {
             )}
           </div>
 
+          {/* User Dropdown */}
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -103,7 +103,8 @@ export function Navbar({ user }: NavbarProps) {
                   className="fixed inset-0 z-40"
                   onClick={() => setDropdownOpen(false)}
                 />
-                <div className="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl">
+                <div className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl">
+                  
                   <Link
                     href="/profile"
                     className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
@@ -112,6 +113,7 @@ export function Navbar({ user }: NavbarProps) {
                     <User className="h-4 w-4" />
                     Profile
                   </Link>
+
                   <Link
                     href="/marketplace"
                     className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
@@ -120,8 +122,25 @@ export function Navbar({ user }: NavbarProps) {
                     <ShoppingBag className="h-4 w-4" />
                     Marketplace
                   </Link>
-                  
-                  {/* Admin Panel in dropdown — only visible when is_admin is true */}
+
+                  <Link
+                    href="/seller/setup"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Seller Setup
+                  </Link>
+
+                  <Link
+                    href="/orders"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    My Orders
+                  </Link>
+
                   {user.is_admin && (
                     <Link
                       href="/admin/listings"
@@ -132,17 +151,17 @@ export function Navbar({ user }: NavbarProps) {
                       Admin Panel
                     </Link>
                   )}
-                  
+
                   <button
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                    }}
+                    onClick={() => setDropdownOpen(false)}
                   >
                     <Settings className="h-4 w-4" />
                     Settings
                   </button>
+
                   <div className="my-1 border-t border-zinc-800" />
+
                   <button
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800"
                     onClick={handleSignOut}

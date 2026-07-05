@@ -7,7 +7,6 @@ import {
   ShoppingBag,
   Store,
   Home,
-  Star,
   GraduationCap,
   ArrowRight,
   Plus,
@@ -16,13 +15,8 @@ import {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -30,9 +24,13 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile?.onboarding_completed) {
-    redirect("/onboarding");
-  }
+  if (!profile?.onboarding_completed) redirect("/onboarding");
+
+  const { data: subaccount } = await supabase
+    .from("paystack_subaccounts")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
 
   const initials = profile.full_name
     ? profile.full_name
@@ -97,15 +95,33 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
+
+      {/* Payout Setup Banner */}
+      {!subaccount && (
+        <div className="mb-4 rounded-lg border border-amber-800 bg-amber-900/20 p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-amber-400">
+              Set up your payout account
+            </p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Required to receive payments when you sell
+            </p>
+          </div>
+          <Link
+            href="/seller/setup"
+            className="shrink-0 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600"
+          >
+            Set Up Now
+          </Link>
+        </div>
+      )}
+
       {/* Profile Bar */}
       <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12">
             {profile.avatar_url && (
-              <AvatarImage
-                src={profile.avatar_url}
-                alt={profile.full_name || ""}
-              />
+              <AvatarImage src={profile.avatar_url} alt={profile.full_name || ""} />
             )}
             <AvatarFallback className="text-sm">{initials}</AvatarFallback>
           </Avatar>

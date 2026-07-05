@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { listingSchema, type ListingInput } from "@/lib/validations/listing";
 import { createListing, uploadListingImage } from "@/lib/actions/listings";
-import { ArrowLeft, Upload, X, Package, FileText } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { ArrowLeft, Upload, X } from "lucide-react";
 
 const categories = [
   { value: "phones", label: "Phones" },
@@ -36,6 +37,7 @@ export default function NewListingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
+  const [hasSubaccount, setHasSubaccount] = useState<boolean | null>(null);
 
   const {
     register,
@@ -49,33 +51,44 @@ export default function NewListingPage() {
 
   const watched = watch();
 
+  useEffect(() => {
+    async function checkSubaccount() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/login")
+        return
+      }
+      const { data } = await supabase
+        .from("paystack_subaccounts")
+        .select("id")
+        .eq("user_id", user.id)
+        .single()
+      setHasSubaccount(!!data)
+    }
+    checkSubaccount()
+  }, [router])
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
     if (images.length + files.length > 4) {
       setError("Maximum 4 images allowed");
       return;
     }
-
     setUploading(true);
     setError(undefined);
-
     for (const file of Array.from(files)) {
       const formData = new FormData();
       formData.append("image", file);
-
-      // Use a temporary listing ID for upload path
       const tempId = `temp_${Date.now()}`;
       const result = await uploadListingImage(formData, tempId);
-
       if (result.error) {
         setError(result.error);
       } else if (result.url) {
         setImages((prev) => [...prev, result.url]);
       }
     }
-
     setUploading(false);
   };
 
@@ -90,11 +103,8 @@ export default function NewListingPage() {
       [],
       [],
     ];
-
     const isValid = await trigger(fieldsToValidate[step]);
-    if (isValid) {
-      setStep((s) => Math.min(s + 1, steps.length - 1));
-    }
+    if (isValid) setStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
   const onSubmit = async (data: ListingInput) => {
@@ -102,20 +112,47 @@ export default function NewListingPage() {
       setError("Please upload at least one image");
       return;
     }
-
     setIsSubmitting(true);
     setError(undefined);
-
     const result = await createListing(data, images);
-
     if (result.error) {
       setError(result.error);
     } else {
       setSuccess(true);
     }
-
     setIsSubmitting(false);
   };
+
+  // Loading state while checking subaccount
+  if (hasSubaccount === null) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+      </div>
+    )
+  }
+
+  // No subaccount — block listing creation
+  if (hasSubaccount === false) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-12 text-center">
+        <div className="rounded-xl border border-amber-800 bg-amber-900/20 p-8">
+          <h2 className="text-xl font-bold text-amber-400">
+            Set Up Payout Account First
+          </h2>
+          <p className="mt-2 text-sm text-amber-300/80">
+            You need to add your bank account before you can create listings.
+            This ensures you can receive payments from buyers.
+          </p>
+          <Link href="/seller/setup">
+            <Button className="mt-6 bg-amber-500 hover:bg-amber-600 text-white">
+              Set Up Payout Account
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   if (success) {
     return (
@@ -156,26 +193,16 @@ export default function NewListingPage() {
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                i <= step
-                  ? "bg-emerald-500 text-white"
-                  : "bg-zinc-800 text-zinc-500"
+                i <= step ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"
               }`}
             >
               {i + 1}
             </div>
-            <span
-              className={`text-sm ${
-                i <= step ? "text-white" : "text-zinc-500"
-              }`}
-            >
+            <span className={`text-sm ${i <= step ? "text-white" : "text-zinc-500"}`}>
               {s}
             </span>
             {i < steps.length - 1 && (
-              <div
-                className={`mx-2 h-px w-8 ${
-                  i < step ? "bg-emerald-500" : "bg-zinc-800"
-                }`}
-              />
+              <div className={`mx-2 h-px w-8 ${i < step ? "bg-emerald-500" : "bg-zinc-800"}`} />
             )}
           </div>
         ))}
@@ -207,9 +234,7 @@ export default function NewListingPage() {
                 className={errors.description ? "border-red-500" : ""}
               />
               {errors.description && (
-                <p className="text-xs text-red-400">
-                  {errors.description.message}
-                </p>
+                <p className="text-xs text-red-400">{errors.description.message}</p>
               )}
             </div>
 
@@ -272,10 +297,7 @@ export default function NewListingPage() {
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Label>Images ({images.length}/4)</Label>
-            </div>
-
+            <Label>Images ({images.length}/4)</Label>
             <div className="grid grid-cols-2 gap-3">
               {images.map((img, i) => (
                 <div
@@ -296,7 +318,6 @@ export default function NewListingPage() {
                   </button>
                 </div>
               ))}
-
               {images.length < 4 && (
                 <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900/50 transition-colors hover:border-zinc-500">
                   <Upload className="h-8 w-8 text-zinc-500" />
@@ -314,7 +335,6 @@ export default function NewListingPage() {
                 </label>
               )}
             </div>
-
             {images.length === 0 && (
               <p className="text-xs text-zinc-500">
                 Upload at least one image of your item
@@ -331,20 +351,17 @@ export default function NewListingPage() {
                 <span className="text-zinc-300">Title:</span> {watched.title}
               </p>
               <p className="text-zinc-400">
-                <span className="text-zinc-300">Price:</span> ₦
-                {watched.price?.toLocaleString()}
+                <span className="text-zinc-300">Price:</span> ₦{watched.price?.toLocaleString()}
               </p>
               <p className="text-zinc-400">
                 <span className="text-zinc-300">Category:</span>{" "}
                 {categories.find((c) => c.value === watched.category)?.label}
               </p>
               <p className="text-zinc-400">
-                <span className="text-zinc-300">Type:</span>{" "}
-                {watched.product_type}
+                <span className="text-zinc-300">Type:</span> {watched.product_type}
               </p>
               <p className="text-zinc-400">
-                <span className="text-zinc-300">Images:</span> {images.length}{" "}
-                uploaded
+                <span className="text-zinc-300">Images:</span> {images.length} uploaded
               </p>
             </div>
             <p className="text-xs text-zinc-500">
