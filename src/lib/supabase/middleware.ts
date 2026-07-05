@@ -30,7 +30,16 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Routes that require no auth
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify', '/auth/callback']
+  const publicRoutes = [
+  '/',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify',
+  '/auth/callback',
+  '/marketplace',
+]
 
   // If logged in and trying to access auth pages → redirect to dashboard
   if (user && ['/login', '/register'].includes(path)) {
