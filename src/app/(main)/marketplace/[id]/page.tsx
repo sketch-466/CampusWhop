@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Package } from "lucide-react";
+import { BuyButton } from "@/components/shared/buy-button";
 
 export default async function ListingDetailPage({
   params,
@@ -159,23 +160,9 @@ export default async function ListingDetailPage({
                 Sign in to Buy
               </Button>
             </Link>
-          ) : (
-            <form
-              action={async () => {
-                "use server";
-                const result = await initializeOrder(listing.id);
-                if (result.authorizationUrl) {
-                  redirect(result.authorizationUrl);
-                }
-              }}
-            >
-              <Button
-                type="submit"
-                className="w-full bg-emerald-500 hover:bg-emerald-600"
-              >
-                Buy Now — ₦{listing.price.toLocaleString()}
-              </Button>
-            </form>
+         ) : (
+  <BuyButton listingId={listing.id} price={listing.price} />
+)}
           )}
         </div>
       </div>
