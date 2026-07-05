@@ -2,6 +2,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+interface Seller {
+  full_name: string | null;
+  avatar_url: string | null;
+  university: string | null;
+}
+
 interface ListingCardProps {
   listing: {
     id: string;
@@ -10,17 +16,15 @@ interface ListingCardProps {
     category: string;
     product_type: string;
     images: string[];
-    seller: {
-      full_name: string | null;
-      avatar_url: string | null;
-      university: string | null;
-    };
+    seller: Seller | null;
   };
 }
 
 export function ListingCard({ listing }: ListingCardProps) {
-  const initials = listing.seller.full_name
-    ? listing.seller.full_name
+  const seller = listing.seller ?? { full_name: null, avatar_url: null, university: null }
+
+  const initials = seller.full_name
+    ? seller.full_name
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -54,7 +58,7 @@ export function ListingCard({ listing }: ListingCardProps) {
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-zinc-600">
+          <div className="flex h-full w-full items-center justify-center text-zinc-600 text-sm">
             No image
           </div>
         )}
@@ -77,20 +81,20 @@ export function ListingCard({ listing }: ListingCardProps) {
         </p>
         <div className="mt-3 flex items-center gap-2">
           <Avatar className="h-5 w-5">
-            {listing.seller.avatar_url && (
+            {seller.avatar_url && (
               <AvatarImage
-                src={listing.seller.avatar_url}
-                alt={listing.seller.full_name || ""}
+                src={seller.avatar_url}
+                alt={seller.full_name || ""}
               />
             )}
             <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <span className="text-xs text-zinc-400">
-            {listing.seller.full_name || "Unknown"}
+            {seller.full_name || "Unknown"}
           </span>
-          <span className="text-xs text-zinc-600">
-            · {listing.seller.university || ""}
-          </span>
+          {seller.university && (
+            <span className="text-xs text-zinc-600">· {seller.university}</span>
+          )}
         </div>
       </div>
     </Link>
