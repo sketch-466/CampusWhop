@@ -279,13 +279,8 @@ export async function disputeOrder(orderId: string, reason: string) {
 export async function getUserOrders() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const { data: buying, error: buyingError } = await supabase
     .from("orders")
@@ -306,9 +301,8 @@ export async function getUserOrders() {
     .eq("seller_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (buyingError || sellingError) {
-    return { error: "Failed to fetch orders" };
-  }
+  if (buyingError) return { error: `Buying query failed: ${buyingError.message}` };
+  if (sellingError) return { error: `Selling query failed: ${sellingError.message}` };
 
   return {
     buying: buying || [],
