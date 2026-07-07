@@ -292,14 +292,14 @@ export async function getUserOrders() {
     .order("created_at", { ascending: false });
 
   const { data: selling, error: sellingError } = await supabase
-    .from("orders")
-    .select(`
-      *,
-      listing:listings(title, images, product_type),
-      buyer:profiles(full_name, avatar_url)
-    `)
-    .eq("seller_id", user.id)
-    .order("created_at", { ascending: false });
+  .from("orders")
+  .select(`
+    *,
+    listing:listings(title, images, product_type),
+    buyer:profiles!orders_buyer_id_fkey(full_name, avatar_url)
+  `)
+  .eq("seller_id", user.id)
+  .order("created_at", { ascending: false });
 
   if (buyingError) return { error: `Buying query failed: ${buyingError.message}` };
   if (sellingError) return { error: `Selling query failed: ${sellingError.message}` };
