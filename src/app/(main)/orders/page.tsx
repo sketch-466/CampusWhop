@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getUserOrders } from "@/lib/actions/orders";
+import { getUserOrders, verifyPayment } from "@/lib/actions/orders";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,19 @@ const statusColors: Record<string, "default" | "success" | "warning" | "destruct
   cancelled: "default",
 };
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reference?: string; trxref?: string }>;
+}) {
+  const params = await searchParams;
+
+  // Verify payment immediately when returning from Paystack
+  const reference = params.reference || params.trxref;
+  if (reference) {
+    await verifyPayment(reference);
+  }
+
   const { buying, selling, error } = await getUserOrders();
 
   return (
@@ -30,6 +42,14 @@ export default async function OrdersPage() {
       </Link>
 
       <h1 className="text-2xl font-bold text-white">Orders</h1>
+
+      {reference && (
+        <div className="mt-4 rounded-lg border border-emerald-800 bg-emerald-900/20 p-3">
+          <p className="text-sm text-emerald-400">
+            ✓ Payment received — your order has been updated below.
+          </p>
+        </div>
+      )}
 
       <Tabs defaultValue="buying" className="mt-6">
         <TabsList>
@@ -89,8 +109,13 @@ function OrderCard({ order, type }: { order: any; type: "buying" | "selling" }) 
           .slice(0, 2)
       : "B";
 
-  const showConfirmDelivery = type === "buying" && order.status === "paid" && order.listing?.product_type === "physical";
-  const showDispute = type === "buying" && ["paid", "delivered"].includes(order.status);
+  const showConfirmDelivery =
+    type === "buying" &&
+    order.status === "paid" &&
+    order.listing?.product_type === "physical";
+
+  const showDispute =
+    type === "buying" && ["paid", "delivered"].includes(order.status);
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
@@ -128,11 +153,16 @@ function OrderCard({ order, type }: { order: any; type: "buying" | "selling" }) 
             <div className="mt-2 flex items-center gap-2">
               <Avatar className="h-5 w-5">
                 {order.buyer.avatar_url && (
-                  <AvatarImage src={order.buyer.avatar_url} alt={order.buyer.full_name} />
+                  <AvatarImage
+                    src={order.buyer.avatar_url}
+                    alt={order.buyer.full_name}
+                  />
                 )}
                 <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
               </Avatar>
-              <span className="text-xs text-zinc-400">{order.buyer.full_name || "Unknown"}</span>
+              <span className="text-xs text-zinc-400">
+                {order.buyer.full_name || "Unknown"}
+              </span>
             </div>
           )}
 
@@ -177,7 +207,7 @@ function OrderCard({ order, type }: { order: any; type: "buying" | "selling" }) 
             )}
 
             {order.status === "completed" && (
-              <span className="text-xs text-emerald-400">Completed</span>
+              <span className="text-xs text-emerald-400">✓ Completed</span>
             )}
 
             {order.status === "disputed" && (
