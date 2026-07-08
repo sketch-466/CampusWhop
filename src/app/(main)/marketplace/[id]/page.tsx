@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Package } from "lucide-react";
 import { BuyButton } from "@/components/shared/buy-button";
+import { ReputationBadge } from "@/components/shared/reputation-badge";
 
 export default async function ListingDetailPage({
   params,
@@ -29,6 +30,8 @@ export default async function ListingDetailPage({
     full_name: null,
     avatar_url: null,
     university: null,
+    reputation_score: 0,
+    total_reviews: 0,
   };
 
   const initials = seller.full_name
@@ -127,7 +130,10 @@ export default async function ListingDetailPage({
                   {seller.full_name || "Unknown Seller"}
                 </p>
                 <p className="text-xs text-zinc-400">
-                  {seller.university || "University not set"} · ⭐ 0 reputation
+                  {seller.university || "University not set"} · <ReputationBadge
+                    score={seller.reputation_score || 0}
+                    totalReviews={seller.total_reviews || 0}
+                  />
                 </p>
               </div>
             </div>

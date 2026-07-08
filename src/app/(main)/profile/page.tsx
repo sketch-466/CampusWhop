@@ -12,6 +12,9 @@ import {
   ArrowLeft,
   Pencil,
 } from "lucide-react";
+import { ReputationBadge } from "@/components/shared/reputation-badge";
+import { StarRating } from "@/components/shared/star-rating";
+import { getReviewsForUser } from "@/lib/actions/reviews";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -33,6 +36,8 @@ export default async function ProfilePage() {
   if (!profile) {
     redirect("/onboarding");
   }
+
+  const reviews = await getReviewsForUser(profile.id);
 
   const initials = profile.full_name
     ? profile.full_name
@@ -127,6 +132,47 @@ export default async function ProfilePage() {
             </a>
           )}
         </div>
+      </div>
+
+      {/* Reputation Section */}
+      <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-lg font-semibold text-white">Reputation</h2>
+          <ReputationBadge
+            score={profile.reputation_score || 0}
+            totalReviews={profile.total_reviews || 0}
+            size="md"
+          />
+        </div>
+
+        {reviews.length > 0 ? (
+          <div className="space-y-3">
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <StarRating value={review.rating} readonly size="sm" />
+                    <span className="text-xs text-zinc-500 capitalize">
+                      {review.reviewerRole}
+                    </span>
+                  </div>
+                  <span className="text-xs text-zinc-500">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-300">{review.comment}</p>
+                <p className="text-xs text-zinc-500">
+                  by {review.reviewer.fullName}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-500">No reviews yet.</p>
+        )}
       </div>
     </div>
   );

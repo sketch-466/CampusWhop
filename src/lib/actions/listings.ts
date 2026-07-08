@@ -105,7 +105,7 @@ export async function getActiveListings(filters?: {
     .from("listings")
     .select(`
       *,
-      seller:profiles(full_name, avatar_url, university)
+      seller:profiles(full_name, avatar_url, university, reputation_score, total_reviews)
     `)
     .eq("status", "active")
     .is("deleted_at", null)
@@ -146,7 +146,7 @@ export async function getListingById(id: string) {
     .from("listings")
     .select(`
       *,
-      seller:profiles(full_name, avatar_url, university, matric_number)
+      seller:profiles(full_name, avatar_url, university, matric_number, reputation_score, total_reviews)
     `)
     .eq("id", id)
     .single();

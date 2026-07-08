@@ -23,7 +23,6 @@ export default async function OrdersPage({
 }) {
   const params = await searchParams;
 
-  // Verify payment immediately when returning from Paystack
   const reference = params.reference || params.trxref;
   if (reference) {
     await verifyPayment(reference);
@@ -207,7 +206,14 @@ function OrderCard({ order, type }: { order: any; type: "buying" | "selling" }) 
             )}
 
             {order.status === "completed" && (
-              <span className="text-xs text-emerald-400">✓ Completed</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-emerald-400">✓ Completed</span>
+                <Link href={`/reviews/${order.id}`}>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2">
+                    Leave Review
+                  </Button>
+                </Link>
+              </div>
             )}
 
             {order.status === "disputed" && (

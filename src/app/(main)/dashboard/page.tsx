@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
+import { ReputationBadge } from "@/components/shared/reputation-badge";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -32,6 +33,12 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .single();
 
+  const { data: reputationData } = await supabase
+    .from("profiles")
+    .select("reputation_score, total_reviews")
+    .eq("id", user.id)
+    .single();
+
   const initials = profile.full_name
     ? profile.full_name
         .split(" ")
@@ -45,7 +52,7 @@ export default async function DashboardPage() {
     { label: "Listings", value: "0" },
     { label: "Orders", value: "0" },
     { label: "Earnings", value: "₦0" },
-    { label: "Reputation", value: "0" },
+    { label: "Reputation", value: reputationData?.reputation_score?.toFixed(1) || "0" },
   ];
 
   const quickActions = [
@@ -132,7 +139,12 @@ export default async function DashboardPage() {
             <p className="text-xs text-zinc-400">
               {profile.university || "No university"} · {profile.matric_number || "No matric"}
             </p>
-            <p className="text-xs text-zinc-500">⭐ 0 reputation points</p>
+            <div className="mt-0.5">
+              <ReputationBadge
+                score={profile.reputation_score || 0}
+                totalReviews={profile.total_reviews || 0}
+              />
+            </div>
           </div>
         </div>
         <Link href="/profile/edit">

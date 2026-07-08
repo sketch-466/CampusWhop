@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ReputationBadge } from "@/components/shared/reputation-badge";
 
 interface Seller {
   full_name: string | null;
   avatar_url: string | null;
   university: string | null;
+  reputation_score: number | null;
+  total_reviews: number | null;
 }
 
 interface ListingCardProps {
@@ -21,7 +24,13 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing }: ListingCardProps) {
-  const seller = listing.seller ?? { full_name: null, avatar_url: null, university: null }
+  const seller = listing.seller ?? {
+    full_name: null,
+    avatar_url: null,
+    university: null,
+    reputation_score: 0,
+    total_reviews: 0,
+  };
 
   const initials = seller.full_name
     ? seller.full_name
@@ -92,9 +101,10 @@ export function ListingCard({ listing }: ListingCardProps) {
           <span className="text-xs text-zinc-400">
             {seller.full_name || "Unknown"}
           </span>
-          {seller.university && (
-            <span className="text-xs text-zinc-600">· {seller.university}</span>
-          )}
+          <ReputationBadge
+            score={seller.reputation_score || 0}
+            totalReviews={seller.total_reviews || 0}
+          />
         </div>
       </div>
     </Link>
