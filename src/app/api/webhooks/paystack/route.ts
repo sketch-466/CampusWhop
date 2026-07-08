@@ -13,13 +13,19 @@ export async function POST(request: Request) {
     .digest("hex");
 
   if (hash !== signature) {
+    console.error("Webhook signature mismatch", {
+      received: signature,
+      expected: hash.slice(0, 10) + "...",
+    });
     return new Response("Invalid signature", { status: 401 });
   }
 
   const event = JSON.parse(body);
+  console.log("Webhook event received:", event.event);
 
-  // Process async — don't await, return 200 immediately
-  processWebhookEvent(event).catch(console.error);
+  processWebhookEvent(event).catch((err) => {
+    console.error("Webhook processing error:", err);
+  });
 
   return new Response("OK", { status: 200 });
 }
@@ -29,20 +35,27 @@ async function processWebhookEvent(event: {
   data: Record<string, unknown>;
 }) {
   const supabase = createAdminClient();
+  console.log("Processing event:", event.event, "data:", JSON.stringify(event.data).slice(0, 200));
 
   if (event.event === "charge.success") {
     const reference = event.data.reference as string;
-    
-    // Update order to paid
-    const { data: order } = await supabase
+    console.log("Updating order for reference:", reference);
+
+    const { data: order, error } = await supabase
       .from("orders")
       .update({ status: "paid" })
       .eq("paystack_reference", reference)
       .select()
       .single();
 
+    if (error) {
+      console.error("Order update error:", error.message);
+      return;
+    }
+
+    console.log("Order updated:", order?.id, "status:", order?.status);
+
     if (order) {
-      // Check if digital product
       const { data: listing } = await supabase
         .from("listings")
         .select("product_type")
@@ -50,7 +63,6 @@ async function processWebhookEvent(event: {
         .single();
 
       if (listing?.product_type === "digital") {
-        // Auto-complete digital orders
         await supabase
           .from("orders")
           .update({
