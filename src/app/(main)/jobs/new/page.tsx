@@ -11,13 +11,33 @@ import { ArrowLeft, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 const jobTypes = [
-  { value: 'job', label: 'Full-time Job' },
-  { value: 'internship', label: 'Internship' },
-  { value: 'gig', label: 'Gig / One-time' },
-  { value: 'ambassador', label: 'Brand Ambassador' },
-  { value: 'remote', label: 'Remote Work' },
-  { value: 'freelance', label: 'Freelance' },
+  { value: 'job' as const, label: 'Full-time Job' },
+  { value: 'internship' as const, label: 'Internship' },
+  { value: 'gig' as const, label: 'Gig / One-time' },
+  { value: 'ambassador' as const, label: 'Brand Ambassador' },
+  { value: 'remote' as const, label: 'Remote Work' },
+  { value: 'freelance' as const, label: 'Freelance' },
 ]
+
+type JobType = (typeof jobTypes)[number]['value']
+type ApplyMethod = 'external' | 'internal'
+
+interface FormData {
+  title: string
+  company: string
+  job_type: JobType
+  location: string
+  is_remote: boolean
+  description: string
+  requirements: string
+  deadline: string
+  is_paid: boolean
+  pay_range: string
+  apply_method: ApplyMethod
+  apply_url: string
+  apply_email: string
+  apply_whatsapp: string
+}
 
 export default function NewJobPage() {
   const router = useRouter()
@@ -26,7 +46,7 @@ export default function NewJobPage() {
   const [error, setError] = useState<string>()
   const [success, setSuccess] = useState(false)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     company: '',
     job_type: 'job',
@@ -37,13 +57,13 @@ export default function NewJobPage() {
     deadline: '',
     is_paid: false,
     pay_range: '',
-    apply_method: 'internal' as 'external' | 'internal',
+    apply_method: 'internal',
     apply_url: '',
     apply_email: '',
     apply_whatsapp: '',
   })
 
-  function updateField(field: string, value: string | boolean) {
+  function updateField<K extends keyof FormData>(field: K, value: FormData[K]) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -68,7 +88,7 @@ export default function NewJobPage() {
         <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-white">Job Post Submitted!</h1>
         <p className="text-zinc-400 mt-2">
-          Your job post is pending admin review. You'll be notified once it's approved.
+          Your job post is pending admin review. You will be notified once it is approved.
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Link href="/jobs">
@@ -131,11 +151,13 @@ export default function NewJobPage() {
             <Label className="text-zinc-300">Job Type</Label>
             <select
               value={formData.job_type}
-              onChange={(e) => updateField('job_type', e.target.value)}
+              onChange={(e) => updateField('job_type', e.target.value as JobType)}
               className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white"
             >
               {jobTypes.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
               ))}
             </select>
           </div>
@@ -157,7 +179,10 @@ export default function NewJobPage() {
             />
             This is a remote position
           </label>
-          <Button onClick={() => setStep(2)} className="w-full bg-emerald-500 hover:bg-emerald-600">
+          <Button
+            onClick={() => setStep(2)}
+            className="w-full bg-emerald-500 hover:bg-emerald-600"
+          >
             Next: Details
           </Button>
         </div>
@@ -171,7 +196,7 @@ export default function NewJobPage() {
             <Textarea
               value={formData.description}
               onChange={(e) => updateField('description', e.target.value)}
-              placeholder="Describe the role, responsibilities, and what you're looking for..."
+              placeholder="Describe the role, responsibilities, and what you are looking for..."
               rows={5}
               className="mt-1"
             />
@@ -216,10 +241,17 @@ export default function NewJobPage() {
             </div>
           )}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => setStep(1)}
+              className="flex-1"
+            >
               Back
             </Button>
-            <Button onClick={() => setStep(3)} className="flex-1 bg-emerald-500 hover:bg-emerald-600">
+            <Button
+              onClick={() => setStep(3)}
+              className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+            >
               Next: Application Method
             </Button>
           </div>
@@ -264,7 +296,9 @@ export default function NewJobPage() {
 
           {formData.apply_method === 'external' && (
             <div className="space-y-3">
-              <p className="text-sm text-zinc-400">Provide at least one contact method:</p>
+              <p className="text-sm text-zinc-400">
+                Provide at least one contact method:
+              </p>
               <div>
                 <Label className="text-zinc-300">Application URL (optional)</Label>
                 <Input
@@ -298,7 +332,11 @@ export default function NewJobPage() {
           {error && <p className="text-sm text-red-400">{error}</p>}
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => setStep(2)}
+              className="flex-1"
+            >
               Back
             </Button>
             <Button
