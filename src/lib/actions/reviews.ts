@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { reviewSchema, type ReviewInput } from '@/lib/validations/review'
 import { revalidatePath } from 'next/cache'
 
-// Helper to normalize Supabase joined relation
+// Helper to normalize Supabase joined relation (array or single object)
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null
   if (Array.isArray(rel)) return rel[0] ?? null
@@ -126,7 +126,9 @@ export async function getReviewsForUser(userId: string) {
 
   return (
     rawReviews?.map((review) => {
-      const reviewer = normalizeRelation<ReviewerProfile>(review.reviewer as ReviewerProfile | ReviewerProfile[] | null)
+      const reviewer = normalizeRelation<ReviewerProfile>(
+        review.reviewer as ReviewerProfile | ReviewerProfile[] | null
+      )
       return {
         id: review.id,
         rating: review.rating,
@@ -181,7 +183,11 @@ export async function canReviewOrder(orderId: string) {
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) {
-    return { canReview: false, role: null as 'buyer' | 'seller' | null, alreadyReviewed: false }
+    return {
+      canReview: false,
+      role: null as 'buyer' | 'seller' | null,
+      alreadyReviewed: false,
+    }
   }
 
   const { data: order, error: orderError } = await supabase
@@ -191,18 +197,30 @@ export async function canReviewOrder(orderId: string) {
     .single()
 
   if (orderError || !order) {
-    return { canReview: false, role: null as 'buyer' | 'seller' | null, alreadyReviewed: false }
+    return {
+      canReview: false,
+      role: null as 'buyer' | 'seller' | null,
+      alreadyReviewed: false,
+    }
   }
 
   if (order.status !== 'completed') {
-    return { canReview: false, role: null as 'buyer' | 'seller' | null, alreadyReviewed: false }
+    return {
+      canReview: false,
+      role: null as 'buyer' | 'seller' | null,
+      alreadyReviewed: false,
+    }
   }
 
   const isBuyer = order.buyer_id === user.id
   const isSeller = order.seller_id === user.id
 
   if (!isBuyer && !isSeller) {
-    return { canReview: false, role: null as 'buyer' | 'seller' | null, alreadyReviewed: false }
+    return {
+      canReview: false,
+      role: null as 'buyer' | 'seller' | null,
+      alreadyReviewed: false,
+    }
   }
 
   const role = isBuyer ? ('buyer' as const) : ('seller' as const)
