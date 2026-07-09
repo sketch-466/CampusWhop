@@ -9,24 +9,39 @@ import { ArrowLeft, Package } from "lucide-react";
 import { BuyButton } from "@/components/shared/buy-button";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
 
+// Helper to normalize Supabase joined relation
+function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
+  if (!rel) return null;
+  if (Array.isArray(rel)) return rel[0] ?? null;
+  return rel;
+}
+
+interface SellerProfile {
+  full_name: string | null;
+  avatar_url: string | null;
+  university: string | null;
+  reputation_score: number | null;
+  total_reviews: number | null;
+}
+
 export default async function ListingDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { listing, error } = await getListingById(id);
+  const { listing: rawListing, error } = await getListingById(id);
 
-  if (error || !listing) {
+  if (error || !rawListing) {
     redirect("/marketplace");
   }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isOwner = user?.id === listing.seller_id;
+  const isOwner = user?.id === rawListing.seller_id;
 
-  const seller = listing.seller ?? {
+  const seller = normalizeRelation<SellerProfile>(rawListing.seller as SellerProfile | SellerProfile[] | null) ?? {
     full_name: null,
     avatar_url: null,
     university: null,
@@ -56,6 +71,8 @@ export default async function ListingDetailPage({
     other: "Other",
   };
 
+  const listingImages = (rawListing.images as string[]) || [];
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <Link
@@ -69,10 +86,10 @@ export default async function ListingDetailPage({
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <div className="aspect-square rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-            {listing.images && listing.images.length > 0 ? (
+            {listingImages.length > 0 ? (
               <img
-                src={listing.images[0]}
-                alt={listing.title}
+                src={listingImages[0]}
+                alt={rawListing.title}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -81,16 +98,16 @@ export default async function ListingDetailPage({
               </div>
             )}
           </div>
-          {listing.images && listing.images.length > 1 && (
+          {listingImages.length > 1 && (
             <div className="flex gap-2">
-              {listing.images.slice(1).map((img: string, i: number) => (
+              {listingImages.slice(1).map((img: string, i: number) => (
                 <div
                   key={i}
                   className="h-16 w-16 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden"
                 >
                   <img
                     src={img}
-                    alt={`${listing.title} ${i + 2}`}
+                    alt={`${rawListing.title} ${i + 2}`}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -102,16 +119,16 @@ export default async function ListingDetailPage({
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant="default">
-              {categoryLabels[listing.category] || listing.category}
+              {categoryLabels[rawListing.category] || rawListing.category}
             </Badge>
-            <Badge variant={listing.product_type === "physical" ? "outline" : "success"}>
-              {listing.product_type === "physical" ? "Physical" : "Digital"}
+            <Badge variant={rawListing.product_type === "physical" ? "outline" : "success"}>
+              {rawListing.product_type === "physical" ? "Physical" : "Digital"}
             </Badge>
           </div>
 
-          <h1 className="text-2xl font-bold text-white">{listing.title}</h1>
+          <h1 className="text-2xl font-bold text-white">{rawListing.title}</h1>
           <p className="text-3xl font-bold text-emerald-500">
-            ₦{listing.price.toLocaleString()}
+            ₦{rawListing.price.toLocaleString()}
           </p>
 
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
@@ -142,16 +159,16 @@ export default async function ListingDetailPage({
           <div>
             <h3 className="font-medium text-white">Description</h3>
             <p className="mt-1 text-sm leading-relaxed text-zinc-400 whitespace-pre-wrap">
-              {listing.description}
+              {rawListing.description}
             </p>
           </div>
 
-          {listing.delivery_note && (
+          {rawListing.delivery_note && (
             <div className="flex items-start gap-2 rounded-lg bg-zinc-900/50 p-3">
               <Package className="mt-0.5 h-4 w-4 text-zinc-500" />
               <div>
                 <p className="text-xs font-medium text-zinc-300">Delivery</p>
-                <p className="text-xs text-zinc-500">{listing.delivery_note}</p>
+                <p className="text-xs text-zinc-500">{rawListing.delivery_note}</p>
               </div>
             </div>
           )}
@@ -169,7 +186,7 @@ export default async function ListingDetailPage({
               </Button>
             </Link>
           ) : (
-            <BuyButton listingId={listing.id} price={listing.price} />
+            <BuyButton listingId={rawListing.id} price={rawListing.price} />
           )}
         </div>
       </div>

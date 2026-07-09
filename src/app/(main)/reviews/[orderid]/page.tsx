@@ -11,6 +11,36 @@ interface ReviewPageProps {
   params: Promise<{ orderId: string }>
 }
 
+// Helper to normalize Supabase joined relation (array or single object)
+function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
+  if (!rel) return null
+  if (Array.isArray(rel)) return rel[0] ?? null
+  return rel
+}
+
+interface OrderWithRelations {
+  id: string
+  status: string
+  amount: number
+  buyer_id: string
+  seller_id: string
+  listing: {
+    id: string
+    title: string
+    images: string[]
+  } | null
+  buyer: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
+  seller: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
+}
+
 export default async function ReviewPage({ params }: ReviewPageProps) {
   const { orderId } = await params
   const supabase = await createClient()
@@ -23,7 +53,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     redirect('/login')
   }
 
-  const { data: order, error: orderError } = await supabase
+  const { data: rawOrder, error: orderError } = await supabase
     .from('orders')
     .select(
       `
@@ -52,8 +82,20 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     .eq('id', orderId)
     .single()
 
-  if (orderError || !order) {
+  if (orderError || !rawOrder) {
     notFound()
+  }
+
+  // Normalize joined relations
+  const order: OrderWithRelations = {
+    id: rawOrder.id,
+    status: rawOrder.status,
+    amount: rawOrder.amount,
+    buyer_id: rawOrder.buyer_id,
+    seller_id: rawOrder.seller_id,
+    listing: normalizeRelation(rawOrder.listing as any),
+    buyer: normalizeRelation(rawOrder.buyer as any),
+    seller: normalizeRelation(rawOrder.seller as any),
   }
 
   const { canReview, role, alreadyReviewed } = await canReviewOrder(orderId)
@@ -85,6 +127,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
       <h1 className="text-2xl font-bold text-white mb-6">Leave a Review</h1>
 
+      {/* Order Summary */}
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 mb-6">
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
@@ -100,13 +143,14 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               {order.listing?.title || 'Untitled Listing'}
             </p>
             <p className="text-sm text-zinc-400">
-              ${order.amount?.toFixed(2) || '0.00'}
+              ₦{order.amount?.toLocaleString() || '0'}
             </p>
             <p className="text-xs text-emerald-400 mt-1">✓ Completed</p>
           </div>
         </div>
       </div>
 
+      {/* Review Form or Already Reviewed State */}
       {alreadyReviewed && existingReview ? (
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4 space-y-3">
           <p className="text-sm font-medium text-white">

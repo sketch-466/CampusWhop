@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { reviewSchema, type ReviewInput } from '@/lib/validations/review'
 import { revalidatePath } from 'next/cache'
 
+// Helper to normalize Supabase joined relation
+function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
+  if (!rel) return null
+  if (Array.isArray(rel)) return rel[0] ?? null
+  return rel
+}
+
 export async function submitReview(data: ReviewInput) {
   const supabase = await createClient()
 
@@ -84,10 +91,16 @@ export async function submitReview(data: ReviewInput) {
   return { success: true }
 }
 
+interface ReviewerProfile {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+}
+
 export async function getReviewsForUser(userId: string) {
   const supabase = await createClient()
 
-  const { data: reviews, error } = await supabase
+  const { data: rawReviews, error } = await supabase
     .from('reviews')
     .select(
       `
@@ -112,18 +125,21 @@ export async function getReviewsForUser(userId: string) {
   }
 
   return (
-    reviews?.map((review) => ({
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment,
-      reviewerRole: review.reviewer_role,
-      createdAt: review.created_at,
-      reviewer: {
-        id: review.reviewer.id,
-        fullName: review.reviewer.full_name,
-        avatarUrl: review.reviewer.avatar_url,
-      },
-    })) ?? []
+    rawReviews?.map((review) => {
+      const reviewer = normalizeRelation<ReviewerProfile>(review.reviewer as ReviewerProfile | ReviewerProfile[] | null)
+      return {
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        reviewerRole: review.reviewer_role,
+        createdAt: review.created_at,
+        reviewer: {
+          id: reviewer?.id || '',
+          fullName: reviewer?.full_name || 'Unknown',
+          avatarUrl: reviewer?.avatar_url,
+        },
+      }
+    }) ?? []
   )
 }
 
