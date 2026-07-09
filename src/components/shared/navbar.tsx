@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   Shield,
   CreditCard,
+  Briefcase,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -67,6 +68,13 @@ export function Navbar({ user }: NavbarProps) {
             >
               <ShoppingBag className="inline h-4 w-4 mr-1" />
               Marketplace
+            </Link>
+            <Link
+              href="/jobs"
+              className="text-sm text-zinc-400 transition-colors hover:text-white"
+            >
+              <Briefcase className="inline h-4 w-4 mr-1" />
+              Jobs
             </Link>
             {user.is_admin && (
               <Link
@@ -124,6 +132,15 @@ export function Navbar({ user }: NavbarProps) {
                   </Link>
 
                   <Link
+                    href="/jobs"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    Jobs
+                  </Link>
+
+                  <Link
                     href="/seller/setup"
                     className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
                     onClick={() => setDropdownOpen(false)}
@@ -139,6 +156,24 @@ export function Navbar({ user }: NavbarProps) {
                   >
                     <ShoppingBag className="h-4 w-4" />
                     My Orders
+                  </Link>
+
+                  <Link
+                    href="/jobs/applications"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    My Applications
+                  </Link>
+
+                  <Link
+                    href="/jobs/my-posts"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    My Job Posts
                   </Link>
 
                   {user.is_admin && (
