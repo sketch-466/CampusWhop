@@ -57,12 +57,13 @@ export default async function DashboardPage() {
 
   const quickActions = [
     {
-      icon: Briefcase,
-      title: "Find Jobs",
-      subtitle: "Browse campus jobs & gigs",
-      href: "#",
-      available: false,
-    },
+  icon: Briefcase,
+  title: "Find Jobs",
+  subtitle: "Browse campus jobs & gigs",
+  href: "/jobs",
+  available: true,
+},
+
     {
       icon: ShoppingBag,
       title: "Browse Market",
