@@ -60,6 +60,16 @@ function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   return rel
 }
 
+interface PosterProfile {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+  phone_number: string | null
+  whatsapp_number: string | null
+  housing_reputation_score: number | null
+  housing_total_reviews: number | null
+}
+
 interface ReviewerProfile {
   id: string
   full_name: string | null
@@ -107,7 +117,9 @@ export default async function HousingDetailPage({
     notFound()
   }
 
-  const poster = normalizeRelation(rawListing.poster as unknown as ReviewerProfile | ReviewerProfile[] | null)
+  const poster = normalizeRelation(
+    rawListing.poster as unknown as PosterProfile | PosterProfile[] | null
+  )
 
   // Visibility check: non-active listings only visible to owner or admin
   if (rawListing.status !== 'active') {
@@ -192,7 +204,7 @@ export default async function HousingDetailPage({
 
       {/* Image Gallery */}
       <div className="space-y-2">
-        <div className="aspect-[16/10] rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+        <div className="aspect-[16/10] rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden relative">
           {images.length > 0 ? (
             <Image
               src={images[0]}
@@ -267,7 +279,9 @@ export default async function HousingDetailPage({
         {rawListing.room_type && (
           <span className="text-zinc-500">· {rawListing.room_type}</span>
         )}
-        <span className="text-zinc-500">{rawListing.views_count || 0} views</span>
+        <span className="text-zinc-500">
+          {rawListing.views_count || 0} views
+        </span>
       </div>
 
       {/* Amenities */}
@@ -318,9 +332,7 @@ export default async function HousingDetailPage({
 
         {isOwner && (
           <div className="mt-3 rounded-lg border border-yellow-800 bg-yellow-900/20 p-3">
-            <p className="text-sm text-yellow-400">
-              This is your listing
-            </p>
+            <p className="text-sm text-yellow-400">This is your listing</p>
           </div>
         )}
 
@@ -377,7 +389,9 @@ export default async function HousingDetailPage({
                   <StarRating value={review.rating} readonly size="sm" />
                 </div>
                 {review.comment && (
-                  <p className="mt-2 text-sm text-zinc-300">{review.comment}</p>
+                  <p className="mt-2 text-sm text-zinc-300">
+                    {review.comment}
+                  </p>
                 )}
                 <p className="mt-1 text-xs text-zinc-500">
                   {new Date(review.created_at).toLocaleDateString()}
