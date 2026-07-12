@@ -24,7 +24,6 @@ export async function createHousingListing(
     return { success: false, error: 'You must be logged in to post a listing' }
   }
 
-  // Parse form data
   const rawData = {
     poster_role: formData.get('poster_role') as string,
     listing_type: formData.get('listing_type') as string,
@@ -156,4 +155,134 @@ export async function uploadHousingImage(formData: FormData) {
   } = supabase.storage.from('housing-images').getPublicUrl(filePath)
 
   return { success: true, url: publicUrl }
+}
+
+interface SubmitReviewResult {
+  success: boolean
+  error?: string
+}
+
+export async function submitHousingReview(
+  listingId: string,
+  rating: number,
+  comment: string
+): Promise<SubmitReviewResult> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in to leave a review' }
+  }
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return { success: false, error: 'Rating must be between 1 and 5' }
+  }
+
+  const trimmedComment = comment.trim()
+  if (trimmedComment.length > 500) {
+    return { success: false, error: 'Comment must be under 500 characters' }
+  }
+
+  const { data: listing, error: listingError } = await supabase
+    .from('housing_listings')
+    .select('poster_id')
+    .eq('id', listingId)
+    .single()
+
+  if (listingError || !listing) {
+    return { success: false, error: 'Listing not found' }
+  }
+
+  if (user.id === listing.poster_id) {
+    return { success: false, error: "You can't review your own listing" }
+  }
+
+  const { error: insertError } = await supabase.from('housing_reviews').insert({
+    listing_id: listingId,
+    reviewer_id: user.id,
+    reviewee_id: listing.poster_id,
+    rating,
+    comment: trimmedComment || null,
+  })
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return { success: false, error: "You've already reviewed this listing" }
+    }
+    console.error('Housing review insert error:', insertError)
+    return { success: false, error: 'Failed to submit review. Please try again.' }
+  }
+
+  revalidatePath(`/housing/${listingId}`)
+  return { success: true }
+}
+
+export async function hasReviewedHousingListing(listingId: string): Promise<boolean> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return false
+
+  const { data } = await supabase
+    .from('housing_reviews')
+    .select('id')
+    .eq('listing_id', listingId)
+    .eq('reviewer_id', user.id)
+    .maybeSingle()
+
+  return !!data
+}
+
+export async function getHousingReviewsForUser(userId: string) {
+  const supabase = await createClient()
+
+  const { data: reviews, error } = await supabase
+    .from('housing_reviews')
+    .select(
+      `
+      id,
+      rating,
+      comment,
+      created_at,
+      reviewer:profiles!housing_reviews_reviewer_id_fkey (
+        id,
+        full_name,
+        avatar_url
+      )
+    `
+    )
+    .eq('reviewee_id', userId)
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Get housing reviews error:', error)
+    return []
+  }
+
+  return (
+    reviews?.map((review) => {
+      const reviewer = Array.isArray(review.reviewer)
+        ? review.reviewer[0]
+        : review.reviewer
+      return {
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.created_at,
+        reviewer: {
+          id: reviewer?.id || '',
+          fullName: reviewer?.full_name || 'Unknown',
+          avatarUrl: reviewer?.avatar_url,
+        },
+      }
+    }) ?? []
+  )
 }

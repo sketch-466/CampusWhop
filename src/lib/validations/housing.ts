@@ -113,3 +113,10 @@ export const housingSchema = baseHousingSchema
   })
 
 export type HousingInput = z.infer<typeof housingSchema>
+
+export const housingReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(500).optional(),
+})
+
+export type HousingReviewInput = z.infer<typeof housingReviewSchema>
