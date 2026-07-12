@@ -57,13 +57,12 @@ export default async function DashboardPage() {
 
   const quickActions = [
     {
-  icon: Briefcase,
-  title: "Find Jobs",
-  subtitle: "Browse campus jobs & gigs",
-  href: "/jobs",
-  available: true,
-},
-
+      icon: Briefcase,
+      title: "Find Jobs",
+      subtitle: "Browse campus jobs & gigs",
+      href: "/jobs",
+      available: true,
+    },
     {
       icon: ShoppingBag,
       title: "Browse Market",
@@ -72,11 +71,11 @@ export default async function DashboardPage() {
       available: true,
     },
     {
-      icon: Store,
-      title: "My Store",
-      subtitle: "Launch your storefront",
-      href: "#",
-      available: false,
+      icon: Home,
+      title: "Find Housing",
+      subtitle: "Verified hostels near you",
+      href: "/housing",
+      available: true,
     },
     {
       icon: ShoppingBag,
@@ -86,9 +85,9 @@ export default async function DashboardPage() {
       available: true,
     },
     {
-      icon: Home,
-      title: "Find Housing",
-      subtitle: "Verified hostels near you",
+      icon: Store,
+      title: "My Store",
+      subtitle: "Launch your storefront",
       href: "#",
       available: false,
     },

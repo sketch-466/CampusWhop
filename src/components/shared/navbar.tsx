@@ -18,6 +18,7 @@ import {
   Shield,
   CreditCard,
   Briefcase,
+  Home,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -68,6 +69,13 @@ export function Navbar({ user }: NavbarProps) {
             >
               <ShoppingBag className="inline h-4 w-4 mr-1" />
               Marketplace
+            </Link>
+            <Link
+              href="/housing"
+              className="text-sm text-zinc-400 transition-colors hover:text-white"
+            >
+              <Home className="inline h-4 w-4 mr-1" />
+              Housing
             </Link>
             <Link
               href="/jobs"
@@ -129,6 +137,15 @@ export function Navbar({ user }: NavbarProps) {
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Marketplace
+                  </Link>
+
+                  <Link
+                    href="/housing"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Home className="h-4 w-4" />
+                    Housing
                   </Link>
 
                   <Link
