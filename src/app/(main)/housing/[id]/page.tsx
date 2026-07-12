@@ -432,3 +432,5 @@ export default async function HousingDetailPage({
     </div>
   )
 }
+ 
+ 
