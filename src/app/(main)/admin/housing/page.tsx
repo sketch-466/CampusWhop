@@ -128,4 +128,4 @@ async function HousingApprovalCard({ listing }: { listing: any }) {
             )}
             {listing.budget_min && listing.budget_max && (
               <span className="text-emerald-400">
-                ₦{listing.budget_min.toLocaleString
+                ₦{listing.budget_min.toLocaleString()}

@@ -40,6 +40,7 @@ export async function updateSession(request: NextRequest) {
   '/auth/callback',
   '/marketplace',
   '/marketplace/',
+  '/store',
 ]
 
 // And update the check to use startsWith instead of exact match:
