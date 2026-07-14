@@ -83,7 +83,6 @@ export default async function AdminHousingPage() {
   )
 }
 
-// Separate server component for each card to handle form actions properly
 async function HousingApprovalCard({ listing }: { listing: any }) {
   async function handleApprove() {
     'use server'
@@ -128,4 +127,36 @@ async function HousingApprovalCard({ listing }: { listing: any }) {
             )}
             {listing.budget_min && listing.budget_max && (
               <span className="text-emerald-400">
-                ₦{listing.budget_min.toLocaleString()}
+                ₦{listing.budget_min.toLocaleString()} - ₦{listing.budget_max.toLocaleString()}
+              </span>
+            )}
+            <span>{listing.distance_to_campus_mins} mins to campus</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 ml-4">
+          <form action={handleApprove}>
+            <Button
+              type="submit"
+              size="sm"
+              className="gap-1 bg-emerald-500 hover:bg-emerald-600"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Approve
+            </Button>
+          </form>
+          <form action={handleReject}>
+            <Button
+              type="submit"
+              size="sm"
+              variant="outline"
+              className="gap-1 text-red-400 hover:bg-red-900/20"
+            >
+              <XCircle className="h-4 w-4" />
+              Reject
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
