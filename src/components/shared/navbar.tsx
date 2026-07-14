@@ -19,6 +19,7 @@ import {
   CreditCard,
   Briefcase,
   Home,
+  Store,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -83,6 +84,13 @@ export function Navbar({ user }: NavbarProps) {
             >
               <Briefcase className="inline h-4 w-4 mr-1" />
               Jobs
+            </Link>
+            <Link
+              href="/store/dashboard"
+              className="text-sm text-zinc-400 transition-colors hover:text-white"
+            >
+              <Store className="inline h-4 w-4 mr-1" />
+              Store
             </Link>
             {user.is_admin && (
               <Link
@@ -158,6 +166,15 @@ export function Navbar({ user }: NavbarProps) {
                   </Link>
 
                   <Link
+                    href="/store/dashboard"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Store className="h-4 w-4" />
+                    My Store
+                  </Link>
+
+                  <Link
                     href="/seller/setup"
                     className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
                     onClick={() => setDropdownOpen(false)}
@@ -173,6 +190,15 @@ export function Navbar({ user }: NavbarProps) {
                   >
                     <ShoppingBag className="h-4 w-4" />
                     My Orders
+                  </Link>
+
+                  <Link
+                    href="/store/dashboard"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Store className="h-4 w-4" />
+                    My Store
                   </Link>
 
                   <Link
