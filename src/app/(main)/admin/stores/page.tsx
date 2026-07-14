@@ -17,7 +17,6 @@ export default async function AdminStoresPage() {
         Admin: Stores & Products
       </h1>
 
-      {/* Pending Stores */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-white mb-4">Pending Stores ({stores.length})</h2>
         {stores.length === 0 ? (
@@ -69,7 +68,6 @@ export default async function AdminStoresPage() {
         )}
       </section>
 
-      {/* Pending Products */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-white mb-4">Pending Products ({products.length})</h2>
         {products.length === 0 ? (
@@ -95,7 +93,7 @@ export default async function AdminStoresPage() {
                 <form
                   action={async () => {
                     "use server";
-                    const supabase = (await import("@/lib/supabase/server")).createClient();
+                    const supabase = (await import("@/lib/supabase/server")).createClient;
                     const client = await supabase();
                     await client.from("store_products").update({ status: "active" }).eq("id", product.id);
                   }}
@@ -108,7 +106,7 @@ export default async function AdminStoresPage() {
                 <form
                   action={async () => {
                     "use server";
-                    const supabase = (await import("@/lib/supabase/server")).createClient();
+                    const supabase = (await import("@/lib/supabase/server")).createClient;
                     const client = await supabase();
                     await client.from("store_products").update({ status: "rejected", rejection_reason: "Does not meet guidelines" }).eq("id", product.id);
                   }}

@@ -19,7 +19,6 @@ export default async function StoreProductPage({
   const { product, error } = await getStoreProductById(productId);
   if (error || !product) notFound();
 
-  // Verify product belongs to this store slug
   const { store } = await getStoreBySlug(slug);
   if (!store || store.id !== product.store_id) notFound();
 
@@ -41,7 +40,6 @@ export default async function StoreProductPage({
       </Link>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Images */}
         <div className="space-y-2">
           <div className="aspect-square rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
             {product.images?.length > 0 ? (
@@ -61,7 +59,6 @@ export default async function StoreProductPage({
           )}
         </div>
 
-        {/* Details */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant={product.product_type === "physical" ? "outline" : "secondary"}>
@@ -73,7 +70,6 @@ export default async function StoreProductPage({
           <h1 className="text-2xl font-bold text-white">{product.title}</h1>
           <p className="text-3xl font-bold text-emerald-500">₦{product.price.toLocaleString()}</p>
 
-          {/* Store mini-card */}
           <Link href={`/store/${slug}`} className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4 hover:border-zinc-700 transition-colors">
             <Avatar className="h-10 w-10">
               {store.logo_url && <AvatarImage src={store.logo_url} alt={store.store_name} />}

@@ -26,7 +26,6 @@ export default async function StorePage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      {/* Banner */}
       <div className="relative h-48 rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden mb-8">
         {store.banner_url ? (
           <img src={store.banner_url} alt={store.store_name} className="h-full w-full object-cover" />
@@ -37,7 +36,6 @@ export default async function StorePage({
         )}
       </div>
 
-      {/* Store Header */}
       <div className="flex items-start gap-4 mb-8">
         <Avatar className="h-20 w-20 border-2 border-zinc-800">
           {store.logo_url && <AvatarImage src={store.logo_url} alt={store.store_name} />}
@@ -55,22 +53,17 @@ export default async function StorePage({
               <span className="text-sm text-zinc-300">{owner?.full_name || "Unknown"}</span>
             </div>
             <span className="text-zinc-600">·</span>
-            <ReputationBadge
-              score={owner?.reputation_score || 0}
-              totalReviews={owner?.total_reviews || 0}
-            />
+            <ReputationBadge score={owner?.reputation_score || 0} totalReviews={owner?.total_reviews || 0} />
           </div>
         </div>
       </div>
 
-      {/* Description */}
       {store.description && (
         <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
           <p className="text-sm text-zinc-400 whitespace-pre-wrap">{store.description}</p>
         </div>
       )}
 
-      {/* Products Grid */}
       <h2 className="text-lg font-semibold text-white mb-4">Products</h2>
       {!products || products.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">

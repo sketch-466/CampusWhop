@@ -93,10 +93,7 @@ export default function NewStoreProductPage() {
           <p className="mt-2 text-sm text-emerald-300">
             Your product is pending review. We'll notify you once it's approved.
           </p>
-          <Button
-            onClick={() => router.push("/store/dashboard")}
-            className="mt-6 bg-emerald-500 hover:bg-emerald-600"
-          >
+          <Button onClick={() => router.push("/store/dashboard")} className="mt-6 bg-emerald-500 hover:bg-emerald-600">
             Back to Dashboard
           </Button>
         </div>
@@ -156,7 +153,6 @@ export default function NewStoreProductPage() {
           </div>
         )}
 
-        {/* Images */}
         <div className="space-y-2">
           <Label>Images ({images.length}/4)</Label>
           <div className="grid grid-cols-2 gap-3">

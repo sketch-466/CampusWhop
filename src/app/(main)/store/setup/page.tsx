@@ -44,38 +44,31 @@ export default function StoreSetupPage() {
     loadStore();
   }, []);
 
-  // Debounced slug availability check
   useEffect(() => {
     if (!slug || slug.length < 3 || isEdit) return;
-    
     const timer = setTimeout(async () => {
       setSlugChecking(true);
       const result = await checkSlugAvailability(slug);
       setSlugAvailable(result.available);
       setSlugChecking(false);
     }, 400);
-
     return () => clearTimeout(timer);
   }, [slug, isEdit]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "banner" | "logo") => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(type);
     setError(undefined);
-
     const formData = new FormData();
     formData.append("image", file);
     const result = await uploadStoreImage(formData);
-
     if (result.error) {
       setError(result.error);
     } else if (result.url) {
       if (type === "banner") setBannerUrl(result.url);
       else setLogoUrl(result.url);
     }
-
     setUploading(null);
   };
 
@@ -98,16 +91,13 @@ export default function StoreSetupPage() {
     formData.append("banner_url", bannerUrl);
     formData.append("logo_url", logoUrl);
 
-    const result = isEdit
-      ? await updateStore(formData)
-      : await createStore(formData);
+    const result = isEdit ? await updateStore(formData) : await createStore(formData);
 
     if (result.error) {
       setError(result.error);
     } else {
       setSuccess(true);
     }
-
     setIsSubmitting(false);
   };
 
@@ -124,10 +114,7 @@ export default function StoreSetupPage() {
               ? "Your store changes have been saved."
               : "Your store is pending review. We'll notify you once it's approved."}
           </p>
-          <Button
-            onClick={() => router.push("/store/dashboard")}
-            className="mt-6 bg-emerald-500 hover:bg-emerald-600"
-          >
+          <Button onClick={() => router.push("/store/dashboard")} className="mt-6 bg-emerald-500 hover:bg-emerald-600">
             Go to Store Dashboard
           </Button>
         </div>
@@ -137,57 +124,27 @@ export default function StoreSetupPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <Link
-        href="/dashboard"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white"
-      >
+      <Link href="/dashboard" className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white">
         <ArrowLeft className="h-4 w-4" />
         Back
       </Link>
 
-      <h1 className="text-2xl font-bold text-white">
-        {isEdit ? "Edit Your Store" : "Create Your Store"}
-      </h1>
+      <h1 className="text-2xl font-bold text-white">{isEdit ? "Edit Your Store" : "Create Your Store"}</h1>
       <p className="mt-1 text-sm text-zinc-400">
-        {isEdit
-          ? "Update your storefront details"
-          : "Set up your branded storefront on CampusWhop"}
+        {isEdit ? "Update your storefront details" : "Set up your branded storefront on CampusWhop"}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-        {/* Store Name */}
         <div className="space-y-2">
           <Label htmlFor="store_name">Store Name</Label>
-          <Input
-            id="store_name"
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-            placeholder="e.g., TechHub Store"
-            required
-            minLength={2}
-            maxLength={60}
-          />
+          <Input id="store_name" value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="e.g., TechHub Store" required minLength={2} maxLength={60} />
         </div>
 
-        {/* Slug */}
         <div className="space-y-2">
           <Label htmlFor="slug">Store URL (Slug)</Label>
           <div className="flex items-center gap-2">
             <span className="text-sm text-zinc-500">campuswhop.com/store/</span>
-            <Input
-              id="slug"
-              value={slug}
-              onChange={(e) => {
-                setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
-                setSlugAvailable(null);
-              }}
-              placeholder="your-store"
-              required
-              minLength={3}
-              maxLength={40}
-              disabled={isEdit}
-              className="flex-1"
-            />
+            <Input id="slug" value={slug} onChange={(e) => { setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")); setSlugAvailable(null); }} placeholder="your-store" required minLength={3} maxLength={40} disabled={isEdit} className="flex-1" />
           </div>
           {slugChecking && (
             <p className="text-xs text-zinc-500 flex items-center gap-1">
@@ -206,98 +163,55 @@ export default function StoreSetupPage() {
           )}
         </div>
 
-        {/* Tagline */}
         <div className="space-y-2">
           <Label htmlFor="tagline">Tagline</Label>
-          <Input
-            id="tagline"
-            value={tagline}
-            onChange={(e) => setTagline(e.target.value)}
-            placeholder="A short description of your store"
-            maxLength={120}
-          />
+          <Input id="tagline" value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="A short description of your store" maxLength={120} />
         </div>
 
-        {/* Description */}
         <div className="space-y-2">
           <Label htmlFor="description">About Your Store</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            placeholder="Tell customers what you sell and what makes your store special..."
-            maxLength={2000}
-          />
+          <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Tell customers what you sell and what makes your store special..." maxLength={2000} />
         </div>
 
-        {/* Banner Upload */}
         <div className="space-y-2">
           <Label>Banner Image</Label>
           {bannerUrl ? (
             <div className="relative aspect-[3/1] rounded-lg border border-zinc-800 overflow-hidden">
               <img src={bannerUrl} alt="Store banner" className="h-full w-full object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage("banner")}
-                className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white"
-              >
+              <button type="button" onClick={() => removeImage("banner")} className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white">
                 <X className="h-3 w-3" />
               </button>
             </div>
           ) : (
-            <label className="flex aspect-[3/1] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900/50 transition-colors hover:border-zinc-500">
+            <label className="flex aspect-[3/1] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:border-zinc-500">
               <Upload className="h-8 w-8 text-zinc-500" />
-              <span className="mt-2 text-xs text-zinc-500">
-                {uploading === "banner" ? "Uploading..." : "Upload banner"}
-              </span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => handleImageUpload(e, "banner")}
-                disabled={uploading !== null}
-              />
+              <span className="mt-2 text-xs text-zinc-500">{uploading === "banner" ? "Uploading..." : "Upload banner"}</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleImageUpload(e, "banner")} disabled={uploading !== null} />
             </label>
           )}
         </div>
 
-        {/* Logo Upload */}
         <div className="space-y-2">
           <Label>Logo</Label>
           {logoUrl ? (
             <div className="relative h-24 w-24 rounded-lg border border-zinc-800 overflow-hidden">
               <img src={logoUrl} alt="Store logo" className="h-full w-full object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage("logo")}
-                className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-white"
-              >
+              <button type="button" onClick={() => removeImage("logo")} className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-white">
                 <X className="h-3 w-3" />
               </button>
             </div>
           ) : (
-            <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900/50 transition-colors hover:border-zinc-500">
+            <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:border-zinc-500">
               <Upload className="h-6 w-6 text-zinc-500" />
               <span className="mt-1 text-xs text-zinc-500">Logo</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => handleImageUpload(e, "logo")}
-                disabled={uploading !== null}
-              />
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleImageUpload(e, "logo")} disabled={uploading !== null} />
             </label>
           )}
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 
-        <Button
-          type="submit"
-          disabled={isSubmitting || (!isEdit && slugAvailable !== true)}
-          className="w-full bg-emerald-500 hover:bg-emerald-600"
-        >
+        <Button type="submit" disabled={isSubmitting || (!isEdit && slugAvailable !== true)} className="w-full bg-emerald-500 hover:bg-emerald-600">
           {isSubmitting ? "Saving..." : isEdit ? "Update Store" : "Create Store"}
         </Button>
       </form>
