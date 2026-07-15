@@ -61,9 +61,7 @@ export default async function StoreProductPage({
 
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <Badge variant={product.product_type === "physical" ? "outline" : "secondary"}>
-              {product.product_type === "physical" ? "Physical" : "Digital"}
-            </Badge>
+            <Badge variant={product.product_type === "physical" ? "outline" : "default"}>
             {isOutOfStock && <Badge variant="destructive">Out of Stock</Badge>}
           </div>
 
