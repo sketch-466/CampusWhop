@@ -202,7 +202,7 @@ export default async function HousingDetailPage({ params }: PageProps) {
                 {listing.profiles.full_name}
               </p>
               <div className="mt-0.5">
-                <ReputationBadge score={listing.profiles.reputation_score} size="sm" />
+                <ReputationBadge score={listing.profiles.reputation_score} totalReviews={listing.profiles.total_reviews} size="sm" />
               </div>
             </div>
             <div className="text-right flex-shrink-0">
