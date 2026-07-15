@@ -126,7 +126,7 @@ export default async function HousingDetailPage({ params }: PageProps) {
         {/* Rating summary */}
         {avgRating !== null && (
           <div className="flex items-center gap-2">
-            <StarRating value={Math.round(avgRating)} interactive={false} />
+            <StarRating value={Math.round(avgRating)} readonly />
             <span className="text-sm font-semibold text-zinc-200">
               {avgRating.toFixed(1)}
             </span>
@@ -258,7 +258,7 @@ export default async function HousingDetailPage({ params }: PageProps) {
                     {review.profiles.full_name}
                   </p>
                 </div>
-                <StarRating value={review.rating} interactive={false} />
+              <StarRating value={review.rating} readonly />
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed">{review.comment}</p>
               <p className="text-xs text-zinc-600">

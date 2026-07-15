@@ -49,7 +49,7 @@ export function HousingReviewForm({ listingId, onSuccess }: HousingReviewFormPro
 
       <div className="space-y-1.5">
         <Label className="text-xs text-zinc-400">Your Rating</Label>
-        <StarRating value={rating} onChange={setRating} interactive />
+        <StarRating value={rating} onChange={setRating} />
       </div>
 
       <div className="space-y-1.5">
