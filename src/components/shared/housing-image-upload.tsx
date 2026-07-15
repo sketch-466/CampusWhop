@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 
 type HousingImageUploadProps = {
   value: string[]
@@ -26,7 +26,7 @@ export function HousingImageUpload({ value, onChange, error }: HousingImageUploa
     setUploading(true)
     setUploadError(null)
 
-    const supabase = createBrowserClient()
+    const supabase = createClient()
     const uploaded: string[] = []
 
     for (const file of selected) {

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { getMyHousingListings, deleteHousingListing, deleteRoommateListing, markRoommateListingFilled } from '@/lib/actions/housing'
 import type { HousingListing, RoommateListing } from '@/types/database'
 
@@ -32,7 +32,7 @@ type PageProps = {
 }
 
 export default async function MyHousingListingsPage({ searchParams }: PageProps) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

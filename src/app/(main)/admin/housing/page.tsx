@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import {
   getPendingHousingListings,
   approveHousingListing,
@@ -29,7 +29,7 @@ const AMENITY_LABELS: Record<string, string> = {
 }
 
 export default async function AdminHousingPage() {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

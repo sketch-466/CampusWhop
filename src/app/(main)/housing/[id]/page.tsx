@@ -1,5 +1,5 @@
  import { notFound } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { getHousingListingById, getHousingReviews, incrementHousingViews } from '@/lib/actions/housing'
 import { HousingReviewFormWrapper } from '@/components/shared/housing-review-form-wrapper'
 import { ReputationBadge } from '@/components/shared/reputation-badge'
@@ -41,7 +41,7 @@ export default async function HousingDetailPage({ params }: PageProps) {
 
   await incrementHousingViews(id)
 
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const alreadyReviewed = user

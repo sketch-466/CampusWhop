@@ -1,6 +1,6 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import {
@@ -26,7 +26,7 @@ export async function getHousingListings(filters?: {
   room_type?: string
   max_price?: number
 }): Promise<HousingListingWithPoster[]> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   let query = supabase
     .from('housing_listings')
     .select('*, profiles!housing_listings_poster_id_fkey(id, full_name, avatar_url, reputation_score, total_reviews)')
@@ -45,7 +45,7 @@ export async function getHousingListings(filters?: {
 }
 
 export async function getHousingListingById(id: string): Promise<HousingListingWithPoster | null> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('housing_listings')
     .select('*, profiles!housing_listings_poster_id_fkey(id, full_name, avatar_url, reputation_score, total_reviews)')
@@ -57,7 +57,7 @@ export async function getHousingListingById(id: string): Promise<HousingListingW
 }
 
 export async function createHousingListing(input: HousingListingInput) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -91,7 +91,7 @@ export async function updateHousingListing(id: string, input: Partial<HousingLis
 }
 
 export async function deleteHousingListing(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -106,7 +106,7 @@ export async function deleteHousingListing(id: string) {
 }
 
 export async function incrementHousingViews(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   await supabase.rpc('increment_housing_views', { listing_id: id })
 }
 
@@ -163,7 +163,7 @@ export async function getRoommateListings(filters?: {
 }
 
 export async function getRoommateListingById(id: string): Promise<RoommateListingWithPoster | null> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('roommate_listings')
     .select('*, profiles!roommate_listings_poster_id_fkey(id, full_name, avatar_url)')
@@ -175,7 +175,7 @@ export async function getRoommateListingById(id: string): Promise<RoommateListin
 }
 
 export async function createRoommateListing(input: RoommateListingInput) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -209,7 +209,7 @@ export async function updateRoommateListing(id: string, input: Partial<RoommateL
 }
 
 export async function deleteRoommateListing(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -224,7 +224,7 @@ export async function deleteRoommateListing(id: string) {
 }
 
 export async function markRoommateListingFilled(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -241,7 +241,7 @@ export async function markRoommateListingFilled(id: string) {
 // ─── HOUSING REVIEWS ─────────────────────────────────────────────
 
 export async function getHousingReviews(listingId: string): Promise<HousingReviewWithReviewer[]> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('housing_reviews')
     .select('*, profiles!housing_reviews_reviewer_id_fkey(id, full_name, avatar_url)')
@@ -253,7 +253,7 @@ export async function getHousingReviews(listingId: string): Promise<HousingRevie
 }
 
 export async function createHousingReview(input: HousingReviewInput) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -273,7 +273,7 @@ export async function createHousingReview(input: HousingReviewInput) {
 // ─── ADMIN ───────────────────────────────────────────────────────
 
 export async function getPendingHousingListings(): Promise<HousingListingWithPoster[]> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -297,7 +297,7 @@ export async function getPendingHousingListings(): Promise<HousingListingWithPos
 }
 
 export async function approveHousingListing(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -320,7 +320,7 @@ export async function approveHousingListing(id: string) {
 }
 
 export async function rejectHousingListing(id: string, reason: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -346,7 +346,7 @@ export async function rejectHousingListing(id: string, reason: string) {
 }
 
 export async function verifyHousingListing(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
