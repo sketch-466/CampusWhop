@@ -92,15 +92,34 @@ export function Navbar({ user }: NavbarProps) {
               <Store className="inline h-4 w-4 mr-1" />
               Store
             </Link>
-            {user.is_admin && (
-              <Link
-                href="/admin/listings"
-                className="text-sm text-amber-400 transition-colors hover:text-amber-300"
-              >
-                <Shield className="inline h-4 w-4 mr-1" />
-                Admin
-              </Link>
-            )}
+           {user.is_admin && (
+  <>
+    <Link
+      href="/admin/listings"
+      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
+      onClick={() => setDropdownOpen(false)}
+    >
+      <Shield className="h-4 w-4" />
+      Admin: Listings
+    </Link>
+    <Link
+      href="/admin/jobs"
+      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
+      onClick={() => setDropdownOpen(false)}
+    >
+      <Shield className="h-4 w-4" />
+      Admin: Jobs
+    </Link>
+    <Link
+      href="/admin/housing"
+      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
+      onClick={() => setDropdownOpen(false)}
+    >
+      <Shield className="h-4 w-4" />
+      Admin: Housing
+    </Link>
+  </>
+)}
           </div>
 
           {/* User Dropdown */}

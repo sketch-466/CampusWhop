@@ -1,288 +1,369 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { housingSchema } from '@/lib/validations/housing'
+import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import {
+  housingListingSchema,
+  roommateListingSchema,
+  housingReviewSchema,
+  type HousingListingInput,
+  type RoommateListingInput,
+  type HousingReviewInput,
+} from '@/lib/validations/housing'
+import type {
+  HousingListing,
+  HousingListingWithPoster,
+  RoommateListing,
+  RoommateListingWithPoster,
+  HousingReviewWithReviewer,
+} from '@/types/database'
 
-interface CreateHousingResult {
-  success: boolean
-  listingId?: string
-  error?: string
-}
+// ─── HOUSING LISTINGS ────────────────────────────────────────────
 
-export async function createHousingListing(
-  formData: FormData
-): Promise<CreateHousingResult> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return { success: false, error: 'You must be logged in to post a listing' }
-  }
-
-  const rawData = {
-    poster_role: formData.get('poster_role') as string,
-    listing_type: formData.get('listing_type') as string,
-    title: formData.get('title') as string,
-    description: formData.get('description') as string,
-    university: (formData.get('university') as string) || 'FUNAI',
-    location_area: formData.get('location_area') as string,
-    distance_to_campus_mins: formData.get('distance_to_campus_mins')
-      ? parseInt(formData.get('distance_to_campus_mins') as string, 10)
-      : null,
-    room_type: (formData.get('room_type') as string) || undefined,
-    amenities: JSON.parse((formData.get('amenities') as string) || '[]'),
-    images: JSON.parse((formData.get('images') as string) || '[]'),
-    price: formData.get('price')
-      ? parseFloat(formData.get('price') as string)
-      : undefined,
-    price_period: (formData.get('price_period') as string) || undefined,
-    budget_min: formData.get('budget_min')
-      ? parseFloat(formData.get('budget_min') as string)
-      : undefined,
-    budget_max: formData.get('budget_max')
-      ? parseFloat(formData.get('budget_max') as string)
-      : undefined,
-  }
-
-  const parsed = housingSchema.safeParse(rawData)
-
-  if (!parsed.success) {
-    const firstError = parsed.error.errors[0]
-    return {
-      success: false,
-      error: `${firstError.path.join('.')}: ${firstError.message}`,
-    }
-  }
-
-  const data = parsed.data
-
-  const insertData: Record<string, unknown> = {
-    poster_id: user.id,
-    status: 'pending',
-    poster_role: data.poster_role,
-    listing_type: data.listing_type,
-    title: data.title,
-    description: data.description,
-    university: data.university,
-    location_area: data.location_area,
-    distance_to_campus_mins: data.distance_to_campus_mins,
-    room_type: data.room_type || null,
-    amenities: data.amenities,
-    images: data.images,
-  }
-
-  if (data.listing_type === 'roommate_wanted') {
-    insertData.budget_min = data.budget_min
-    insertData.budget_max = data.budget_max
-    insertData.price = null
-    insertData.price_period = null
-  } else {
-    insertData.price = data.price
-    insertData.price_period = data.price_period
-    insertData.budget_min = null
-    insertData.budget_max = null
-  }
-
-  const { data: listing, error: insertError } = await supabase
+export async function getHousingListings(filters?: {
+  university?: string
+  room_type?: string
+  max_price?: number
+}): Promise<HousingListingWithPoster[]> {
+  const supabase = await createServerClient()
+  let query = supabase
     .from('housing_listings')
-    .insert(insertData)
-    .select('id')
-    .single()
-
-  if (insertError) {
-    console.error('Housing insert error:', insertError)
-    return {
-      success: false,
-      error: 'Failed to create listing. Please try again.',
-    }
-  }
-
-  revalidatePath('/housing')
-  revalidatePath('/housing/my-listings')
-
-  return { success: true, listingId: listing.id }
-}
-
-export async function uploadHousingImage(formData: FormData) {
-  const file = formData.get('image') as File
-
-  if (!file) {
-    return { success: false, error: 'No file provided' }
-  }
-
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-  if (!allowedTypes.includes(file.type)) {
-    return { success: false, error: 'Only JPG, PNG, and WEBP images are allowed' }
-  }
-
-  const maxSize = 5 * 1024 * 1024
-  if (file.size > maxSize) {
-    return { success: false, error: 'File must be less than 5MB' }
-  }
-
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const ext = file.name.split('.').pop()
-  const timestamp = Date.now()
-  const filePath = `${user.id}/housing/${timestamp}.${ext}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('housing-images')
-    .upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    })
-
-  if (uploadError) {
-    return { success: false, error: 'Failed to upload image' }
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('housing-images').getPublicUrl(filePath)
-
-  return { success: true, url: publicUrl }
-}
-
-interface SubmitReviewResult {
-  success: boolean
-  error?: string
-}
-
-export async function submitHousingReview(
-  listingId: string,
-  rating: number,
-  comment: string
-): Promise<SubmitReviewResult> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return { success: false, error: 'You must be logged in to leave a review' }
-  }
-
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return { success: false, error: 'Rating must be between 1 and 5' }
-  }
-
-  const trimmedComment = comment.trim()
-  if (trimmedComment.length > 500) {
-    return { success: false, error: 'Comment must be under 500 characters' }
-  }
-
-  const { data: listing, error: listingError } = await supabase
-    .from('housing_listings')
-    .select('poster_id')
-    .eq('id', listingId)
-    .single()
-
-  if (listingError || !listing) {
-    return { success: false, error: 'Listing not found' }
-  }
-
-  if (user.id === listing.poster_id) {
-    return { success: false, error: "You can't review your own listing" }
-  }
-
-  const { error: insertError } = await supabase.from('housing_reviews').insert({
-    listing_id: listingId,
-    reviewer_id: user.id,
-    reviewee_id: listing.poster_id,
-    rating,
-    comment: trimmedComment || null,
-  })
-
-  if (insertError) {
-    if (insertError.code === '23505') {
-      return { success: false, error: "You've already reviewed this listing" }
-    }
-    console.error('Housing review insert error:', insertError)
-    return { success: false, error: 'Failed to submit review. Please try again.' }
-  }
-
-  revalidatePath(`/housing/${listingId}`)
-  return { success: true }
-}
-
-export async function hasReviewedHousingListing(listingId: string): Promise<boolean> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return false
-
-  const { data } = await supabase
-    .from('housing_reviews')
-    .select('id')
-    .eq('listing_id', listingId)
-    .eq('reviewer_id', user.id)
-    .maybeSingle()
-
-  return !!data
-}
-
-export async function getHousingReviewsForUser(userId: string) {
-  const supabase = await createClient()
-
-  const { data: reviews, error } = await supabase
-    .from('housing_reviews')
-    .select(
-      `
-      id,
-      rating,
-      comment,
-      created_at,
-      reviewer:profiles!housing_reviews_reviewer_id_fkey (
-        id,
-        full_name,
-        avatar_url
-      )
-    `
-    )
-    .eq('reviewee_id', userId)
-    .eq('is_deleted', false)
+    .select('*, profiles!housing_listings_poster_id_fkey(id, full_name, avatar_url, reputation_score, total_reviews)')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .order('is_verified', { ascending: false })
     .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Get housing reviews error:', error)
-    return []
-  }
+  if (filters?.university) query = query.ilike('university', `%${filters.university}%`)
+  if (filters?.room_type) query = query.eq('room_type', filters.room_type)
+  if (filters?.max_price) query = query.lte('price_per_year', filters.max_price)
 
-  return (
-    reviews?.map((review) => {
-      const reviewer = Array.isArray(review.reviewer)
-        ? review.reviewer[0]
-        : review.reviewer
-      return {
-        id: review.id,
-        rating: review.rating,
-        comment: review.comment,
-        createdAt: review.created_at,
-        reviewer: {
-          id: reviewer?.id || '',
-          fullName: reviewer?.full_name || 'Unknown',
-          avatarUrl: reviewer?.avatar_url,
-        },
-      }
-    }) ?? []
-  )
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+  return (data ?? []) as HousingListingWithPoster[]
+}
+
+export async function getHousingListingById(id: string): Promise<HousingListingWithPoster | null> {
+  const supabase = await createServerClient()
+  const { data, error } = await supabase
+    .from('housing_listings')
+    .select('*, profiles!housing_listings_poster_id_fkey(id, full_name, avatar_url, reputation_score, total_reviews)')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single()
+  if (error) return null
+  return data as HousingListingWithPoster
+}
+
+export async function createHousingListing(input: HousingListingInput) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const validated = housingListingSchema.parse(input)
+
+  const { data, error } = await supabase
+    .from('housing_listings')
+    .insert({ ...validated, poster_id: user.id })
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/housing')
+  return data as HousingListing
+}
+
+export async function updateHousingListing(id: string, input: Partial<HousingListingInput>) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('housing_listings')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('poster_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/housing/${id}`)
+  revalidatePath('/housing/my-listings')
+}
+
+export async function deleteHousingListing(id: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('housing_listings')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('poster_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/housing/my-listings')
+}
+
+export async function incrementHousingViews(id: string) {
+  const supabase = await createServerClient()
+  await supabase.rpc('increment_housing_views', { listing_id: id })
+}
+
+export async function getMyHousingListings() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const [hostels, roommates] = await Promise.all([
+    supabase
+      .from('housing_listings')
+      .select('*')
+      .eq('poster_id', user.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('roommate_listings')
+      .select('*')
+      .eq('poster_id', user.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
+  ])
+
+  return {
+    hostels: (hostels.data ?? []) as HousingListing[],
+    roommates: (roommates.data ?? []) as RoommateListing[],
+  }
+}
+
+// ─── ROOMMATE LISTINGS ───────────────────────────────────────────
+
+export async function getRoommateListings(filters?: {
+  university?: string
+  preferred_gender?: string
+  max_budget?: number
+}): Promise<RoommateListingWithPoster[]> {
+  const supabase = await createServerClient()
+  let query = supabase
+    .from('roommate_listings')
+    .select('*, profiles!roommate_listings_poster_id_fkey(id, full_name, avatar_url)')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (filters?.university) query = query.ilike('university', `%${filters.university}%`)
+  if (filters?.preferred_gender && filters.preferred_gender !== 'any') {
+    query = query.in('preferred_gender', [filters.preferred_gender, 'any'])
+  }
+  if (filters?.max_budget) query = query.lte('budget_per_year', filters.max_budget)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+  return (data ?? []) as RoommateListingWithPoster[]
+}
+
+export async function getRoommateListingById(id: string): Promise<RoommateListingWithPoster | null> {
+  const supabase = await createServerClient()
+  const { data, error } = await supabase
+    .from('roommate_listings')
+    .select('*, profiles!roommate_listings_poster_id_fkey(id, full_name, avatar_url)')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single()
+  if (error) return null
+  return data as RoommateListingWithPoster
+}
+
+export async function createRoommateListing(input: RoommateListingInput) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const validated = roommateListingSchema.parse(input)
+
+  const { data, error } = await supabase
+    .from('roommate_listings')
+    .insert({ ...validated, poster_id: user.id })
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/housing')
+  return data as RoommateListing
+}
+
+export async function updateRoommateListing(id: string, input: Partial<RoommateListingInput>) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('roommate_listings')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('poster_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/housing/roommates/${id}`)
+  revalidatePath('/housing/my-listings')
+}
+
+export async function deleteRoommateListing(id: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('roommate_listings')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('poster_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/housing/my-listings')
+}
+
+export async function markRoommateListingFilled(id: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('roommate_listings')
+    .update({ status: 'filled', updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('poster_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/housing/my-listings')
+}
+
+// ─── HOUSING REVIEWS ─────────────────────────────────────────────
+
+export async function getHousingReviews(listingId: string): Promise<HousingReviewWithReviewer[]> {
+  const supabase = await createServerClient()
+  const { data, error } = await supabase
+    .from('housing_reviews')
+    .select('*, profiles!housing_reviews_reviewer_id_fkey(id, full_name, avatar_url)')
+    .eq('listing_id', listingId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return (data ?? []) as HousingReviewWithReviewer[]
+}
+
+export async function createHousingReview(input: HousingReviewInput) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const validated = housingReviewSchema.parse(input)
+
+  const { error } = await supabase
+    .from('housing_reviews')
+    .insert({ ...validated, reviewer_id: user.id })
+
+  if (error) {
+    if (error.code === '23505') throw new Error('You have already reviewed this listing')
+    throw new Error(error.message)
+  }
+  revalidatePath(`/housing/${input.listing_id}`)
+}
+
+// ─── ADMIN ───────────────────────────────────────────────────────
+
+export async function getPendingHousingListings(): Promise<HousingListingWithPoster[]> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) redirect('/dashboard')
+
+  const { data, error } = await supabase
+    .from('housing_listings')
+    .select('*, profiles!housing_listings_poster_id_fkey(id, full_name, avatar_url, reputation_score, total_reviews)')
+    .eq('status', 'pending')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+
+  if (error) throw new Error(error.message)
+  return (data ?? []) as HousingListingWithPoster[]
+}
+
+export async function approveHousingListing(id: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) throw new Error('Unauthorized')
+
+  const { error } = await supabase
+    .from('housing_listings')
+    .update({ status: 'active', updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/housing')
+  revalidatePath('/housing')
+}
+
+export async function rejectHousingListing(id: string, reason: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) throw new Error('Unauthorized')
+
+  const { error } = await supabase
+    .from('housing_listings')
+    .update({
+      status: 'rejected',
+      rejection_reason: reason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/housing')
+}
+
+export async function verifyHousingListing(id: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) throw new Error('Unauthorized')
+
+  const { error } = await supabase
+    .from('housing_listings')
+    .update({ is_verified: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/housing')
+  revalidatePath('/housing')
 }

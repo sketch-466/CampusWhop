@@ -6,54 +6,40 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { AmenitiesPicker } from '@/components/shared/amenities-picker'
-import { HousingImageUpload } from '@/components/shared/housing-image-upload'
-import { createHousingListing } from '@/lib/actions/housing'
+import { createRoommateListing } from '@/lib/actions/housing'
 
-const POSTER_TYPES = [
-  { value: 'landlord', label: 'Landlord' },
-  { value: 'agent', label: 'Agent' },
-  { value: 'student', label: 'Student (Subletting)' },
-]
-
-const ROOM_TYPES = [
-  { value: 'self_con', label: 'Self-Contained' },
-  { value: 'shared_room', label: 'Shared Room' },
-  { value: 'mini_flat', label: 'Mini Flat' },
-  { value: 'flat', label: 'Flat' },
-  { value: 'duplex', label: 'Duplex' },
+const GENDER_OPTIONS = [
+  { value: 'male', label: '👨 Males Only' },
+  { value: 'female', label: '👩 Females Only' },
+  { value: 'any', label: '🤝 Any Gender' },
 ]
 
 type FormErrors = Partial<Record<string, string>>
 
-export default function NewHousingListingPage() {
+export default function NewRoommateListingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
 
-  const [posterType, setPosterType] = useState('landlord')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [university, setUniversity] = useState('FUNAI')
-  const [pricePerYear, setPricePerYear] = useState('')
-  const [roomType, setRoomType] = useState('self_con')
-  const [amenities, setAmenities] = useState<string[]>([])
-  const [images, setImages] = useState<string[]>([])
-  const [availableRooms, setAvailableRooms] = useState('1')
+  const [budgetPerYear, setBudgetPerYear] = useState('')
+  const [preferredGender, setPreferredGender] = useState('any')
+  const [moveInDate, setMoveInDate] = useState('')
   const [whatsappNumber, setWhatsappNumber] = useState('')
 
   function validate(): boolean {
     const e: FormErrors = {}
     if (title.length < 10) e.title = 'Title must be at least 10 characters'
-    if (description.length < 30) e.description = 'Description must be at least 30 characters'
+    if (description.length < 20) e.description = 'Tell us more about yourself'
     if (location.length < 3) e.location = 'Location is required'
     if (university.length < 3) e.university = 'University is required'
-    const price = parseInt(pricePerYear)
-    if (!price || price < 10000) e.price_per_year = 'Minimum price is ₦10,000'
-    if (amenities.length === 0) e.amenities = 'Select at least one amenity'
-    if (images.length === 0) e.images = 'At least one photo is required'
+    const budget = parseInt(budgetPerYear)
+    if (!budget || budget < 10000) e.budget_per_year = 'Minimum budget is ₦10,000'
+    if (!moveInDate) e.move_in_date = 'Move-in date is required'
     if (whatsappNumber.length < 11) e.whatsapp_number = 'Enter a valid WhatsApp number'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -65,26 +51,25 @@ export default function NewHousingListingPage() {
     setError(null)
 
     try {
-      await createHousingListing({
-        poster_type: posterType as 'landlord' | 'agent' | 'student',
+      await createRoommateListing({
         title: title.trim(),
         description: description.trim(),
         location: location.trim(),
         university: university.trim(),
-        price_per_year: parseInt(pricePerYear),
-        room_type: roomType as 'self_con' | 'shared_room' | 'mini_flat' | 'flat' | 'duplex',
-        amenities,
-        images,
-        available_rooms: parseInt(availableRooms) || 1,
+        budget_per_year: parseInt(budgetPerYear),
+        preferred_gender: preferredGender as 'male' | 'female' | 'any',
+        move_in_date: moveInDate,
         whatsapp_number: whatsappNumber.trim(),
       })
-      router.push('/housing/my-listings?success=hostel')
+      router.push('/housing/my-listings?success=roommate')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create listing')
     } finally {
       setLoading(false)
     }
   }
+
+  const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
@@ -96,44 +81,23 @@ export default function NewHousingListingPage() {
         >
           ← Back
         </button>
-        <h1 className="text-lg font-bold text-zinc-100">Post a Hostel</h1>
+        <h1 className="text-lg font-bold text-zinc-100">Find a Roommate</h1>
         <p className="text-xs text-zinc-500 mt-0.5">
-          Your listing will be reviewed within 24 hours before going live
+          Post your roommate request and connect with students looking to share
         </p>
       </div>
 
       <div className="px-4 py-5 space-y-5">
-        {/* Poster Type */}
-        <div className="space-y-1.5">
-          <Label className="text-xs text-zinc-400">You are a</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {POSTER_TYPES.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setPosterType(t.value)}
-                className={`rounded-lg border py-2 text-xs font-medium transition-colors ${
-                  posterType === t.value
-                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
-                    : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Title */}
         <div className="space-y-1.5">
           <Label htmlFor="title" className="text-xs text-zinc-400">
-            Listing Title
+            Post Title
           </Label>
           <Input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Spacious Self-Con Near FUNAI Gate"
+            placeholder="e.g. Looking for female roommate near FUNAI"
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
           {errors.title && <p className="text-xs text-red-400">{errors.title}</p>}
@@ -142,29 +106,31 @@ export default function NewHousingListingPage() {
         {/* Description */}
         <div className="space-y-1.5">
           <Label htmlFor="description" className="text-xs text-zinc-400">
-            Description
+            About You
           </Label>
           <Textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the room, building condition, neighbourhood, landlord rules..."
+            placeholder="Tell potential roommates about yourself — your habits, study schedule, lifestyle..."
             rows={4}
             className="resize-none bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
-          {errors.description && <p className="text-xs text-red-400">{errors.description}</p>}
+          {errors.description && (
+            <p className="text-xs text-red-400">{errors.description}</p>
+          )}
         </div>
 
         {/* Location */}
         <div className="space-y-1.5">
           <Label htmlFor="location" className="text-xs text-zinc-400">
-            Location / Area
+            Preferred Area
           </Label>
           <Input
             id="location"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. Abakaliki Road, beside Chicken Republic"
+            placeholder="e.g. Abakaliki Road, anywhere near campus"
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
           {errors.location && <p className="text-xs text-red-400">{errors.location}</p>}
@@ -173,7 +139,7 @@ export default function NewHousingListingPage() {
         {/* University */}
         <div className="space-y-1.5">
           <Label htmlFor="university" className="text-xs text-zinc-400">
-            Nearest University
+            University
           </Label>
           <Input
             id="university"
@@ -182,87 +148,71 @@ export default function NewHousingListingPage() {
             placeholder="e.g. FUNAI"
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
-          {errors.university && <p className="text-xs text-red-400">{errors.university}</p>}
+          {errors.university && (
+            <p className="text-xs text-red-400">{errors.university}</p>
+          )}
         </div>
 
-        {/* Price */}
+        {/* Budget */}
         <div className="space-y-1.5">
-          <Label htmlFor="price" className="text-xs text-zinc-400">
-            Price Per Year (₦)
+          <Label htmlFor="budget" className="text-xs text-zinc-400">
+            Budget Per Year (₦)
           </Label>
           <Input
-            id="price"
+            id="budget"
             type="number"
-            value={pricePerYear}
-            onChange={(e) => setPricePerYear(e.target.value)}
-            placeholder="e.g. 120000"
+            value={budgetPerYear}
+            onChange={(e) => setBudgetPerYear(e.target.value)}
+            placeholder="e.g. 80000"
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
-          {pricePerYear && !isNaN(parseInt(pricePerYear)) && (
+          {budgetPerYear && !isNaN(parseInt(budgetPerYear)) && (
             <p className="text-xs text-zinc-500">
-              = ₦{parseInt(pricePerYear).toLocaleString()} per year
+              = ₦{parseInt(budgetPerYear).toLocaleString()} per year
             </p>
           )}
-          {errors.price_per_year && (
-            <p className="text-xs text-red-400">{errors.price_per_year}</p>
+          {errors.budget_per_year && (
+            <p className="text-xs text-red-400">{errors.budget_per_year}</p>
           )}
         </div>
 
-        {/* Room Type */}
+        {/* Preferred Gender */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-zinc-400">Room Type</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {ROOM_TYPES.map((t) => (
+          <Label className="text-xs text-zinc-400">Preferred Roommate Gender</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {GENDER_OPTIONS.map((g) => (
               <button
-                key={t.value}
+                key={g.value}
                 type="button"
-                onClick={() => setRoomType(t.value)}
-                className={`rounded-lg border py-2 text-xs font-medium transition-colors ${
-                  roomType === t.value
+                onClick={() => setPreferredGender(g.value)}
+                className={`rounded-lg border py-2.5 text-xs font-medium transition-colors ${
+                  preferredGender === g.value
                     ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
                     : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500'
                 }`}
               >
-                {t.label}
+                {g.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Amenities */}
+        {/* Move-in Date */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-zinc-400">Amenities</Label>
-          <AmenitiesPicker
-            value={amenities}
-            onChange={setAmenities}
-            error={errors.amenities}
-          />
-        </div>
-
-        {/* Images */}
-        <div className="space-y-1.5">
-          <Label className="text-xs text-zinc-400">Photos (max 6)</Label>
-          <HousingImageUpload
-            value={images}
-            onChange={setImages}
-            error={errors.images}
-          />
-        </div>
-
-        {/* Available Rooms */}
-        <div className="space-y-1.5">
-          <Label htmlFor="rooms" className="text-xs text-zinc-400">
-            Number of Available Rooms
+          <Label htmlFor="move_in_date" className="text-xs text-zinc-400">
+            Available From
           </Label>
           <Input
-            id="rooms"
-            type="number"
-            min="1"
-            max="999"
-            value={availableRooms}
-            onChange={(e) => setAvailableRooms(e.target.value)}
+            id="move_in_date"
+            type="date"
+            min={today}
+            value={moveInDate}
+            onChange={(e) => setMoveInDate(e.target.value)}
             className="bg-zinc-800 border-zinc-700 text-zinc-100 text-sm"
           />
+          {errors.move_in_date && (
+            <p className="text-xs text-red-400">{errors.move_in_date}</p>
+          )}
         </div>
 
         {/* WhatsApp */}
@@ -289,19 +239,12 @@ export default function NewHousingListingPage() {
           </div>
         )}
 
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-          <p className="text-xs text-zinc-500">
-            ⏳ Your listing will be reviewed by our team within 24 hours before going live.
-            Make sure your photos and details are accurate.
-          </p>
-        </div>
-
         <Button
           onClick={handleSubmit}
           disabled={loading}
           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          {loading ? 'Submitting...' : 'Submit Listing'}
+          {loading ? 'Posting...' : 'Post Roommate Request'}
         </Button>
       </div>
     </div>
