@@ -40,7 +40,7 @@ export function StoreProductCard({ product, storeSlug }: StoreProductCardProps) 
         </div>
         <div className="p-3">
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant={product.product_type === "physical" ? "outline" : "secondary"} className="text-xs">
+            <Badge variant={product.product_type === "physical" ? "outline" : "default"} className="text-xs">
               {product.product_type === "physical" ? "Physical" : "Digital"}
             </Badge>
             {isOutOfStock && (

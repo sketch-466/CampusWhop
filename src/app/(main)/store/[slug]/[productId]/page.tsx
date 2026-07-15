@@ -60,10 +60,12 @@ export default async function StoreProductPage({
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Badge variant={product.product_type === "physical" ? "outline" : "default"}>
-            {isOutOfStock && <Badge variant="destructive">Out of Stock</Badge>}
-          </div>
+         <div className="flex items-center gap-2">
+  <Badge variant={product.product_type === "physical" ? "outline" : "default"}>
+    {product.product_type === "physical" ? "Physical" : "Digital"}
+  </Badge>
+  {isOutOfStock && <Badge variant="destructive">Out of Stock</Badge>}
+</div>
 
           <h1 className="text-2xl font-bold text-white">{product.title}</h1>
           <p className="text-3xl font-bold text-emerald-500">₦{product.price.toLocaleString()}</p>
