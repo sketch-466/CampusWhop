@@ -35,16 +35,16 @@ async function processWebhookEvent(event: {
   data: Record<string, unknown>;
 }) {
   const supabase = createAdminClient();
-  console.log("Processing event:", event.event, "data:", JSON.stringify(event.data).slice(0, 200));
 
   if (event.event === "charge.success") {
     const reference = event.data.reference as string;
-    console.log("Updating order for reference:", reference);
+    console.log("Processing charge.success for reference:", reference);
 
     const { data: order, error } = await supabase
       .from("orders")
-      .update({ status: "paid" })
+      .update({ status: "paid", updated_at: new Date().toISOString() })
       .eq("paystack_reference", reference)
+      .eq("status", "pending")
       .select()
       .single();
 
@@ -53,9 +53,10 @@ async function processWebhookEvent(event: {
       return;
     }
 
-    console.log("Order updated:", order?.id, "status:", order?.status);
+    if (!order) return;
 
-    if (order) {
+    // Marketplace order — auto-complete digital products
+    if (order.listing_id && !order.store_product_id) {
       const { data: listing } = await supabase
         .from("listings")
         .select("product_type")
@@ -72,13 +73,53 @@ async function processWebhookEvent(event: {
           .eq("id", order.id);
       }
     }
+
+    // Store order
+    if (order.store_product_id) {
+      if (order.digital_file_url) {
+        // Digital — complete immediately
+        await supabase
+          .from("orders")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", order.id);
+      } else {
+        // Physical — decrement stock + increment units_sold
+        const { data: product } = await supabase
+          .from("store_products")
+          .select("stock_quantity")
+          .eq("id", order.store_product_id)
+          .single();
+
+        if (
+          product?.stock_quantity !== null &&
+          product?.stock_quantity !== undefined
+        ) {
+          await supabase
+            .from("store_products")
+            .update({
+              stock_quantity: Math.max(0, product.stock_quantity - 1),
+            })
+            .eq("id", order.store_product_id);
+        }
+
+        await supabase.rpc("increment_store_units_sold", {
+          product_id: order.store_product_id,
+        });
+      }
+    }
   }
 
   if (event.event === "transfer.success") {
     const transferCode = event.data.transfer_code as string;
     await supabase
       .from("orders")
-      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      })
       .eq("paystack_transfer_code", transferCode);
   }
 

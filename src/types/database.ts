@@ -75,3 +75,62 @@ export type HousingReviewWithReviewer = HousingReview & {
     avatar_url: string | null
   }
 }
+
+
+// ─── STORE ORDERS ─────────────────────────────────────────────────
+
+export type StoreOrderStatus =
+  | 'pending'
+  | 'paid'
+  | 'shipped'
+  | 'completed'
+  | 'disputed'
+  | 'refunded'
+  | 'cancelled'
+
+export type StoreOrder = {
+  id: string
+  listing_id: string | null
+  store_id: string | null
+  store_product_id: string | null
+  buyer_id: string
+  seller_id: string
+  amount: number
+  platform_fee: number
+  seller_amount: number
+  status: StoreOrderStatus
+  paystack_reference: string | null
+  paystack_transfer_code: string | null
+  digital_file_url: string | null
+  shipped_at: string | null
+  delivery_confirmed_at: string | null
+  completed_at: string | null
+  disputed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type StoreOrderWithDetails = StoreOrder & {
+  store_products: {
+    id: string
+    title: string
+    images: string[]
+    product_type: string
+  } | null
+  stores: {
+    id: string
+    store_name: string
+    slug: string
+    logo_url: string | null
+  } | null
+  buyer: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
+  seller: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
+}
