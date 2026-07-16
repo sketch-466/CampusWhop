@@ -24,7 +24,13 @@ export type HousingListing = {
 }
 
 export type HousingListingWithPoster = HousingListing & {
-  profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'reputation_score' | 'total_reviews'>
+  profiles: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+    reputation_score: number
+    total_reviews: number
+  }
 }
 
 export type RoommateListing = {
@@ -45,7 +51,11 @@ export type RoommateListing = {
 }
 
 export type RoommateListingWithPoster = RoommateListing & {
-  profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+  profiles: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
 }
 
 export type HousingReview = {
@@ -59,5 +69,9 @@ export type HousingReview = {
 }
 
 export type HousingReviewWithReviewer = HousingReview & {
-  profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+  profiles: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
 }
