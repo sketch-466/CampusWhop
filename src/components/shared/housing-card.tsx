@@ -94,7 +94,7 @@ export function HousingCard({ listing, showStatus = false }: HousingCardProps) {
               {listing.profiles.full_name}
             </span>
             <div className="ml-auto">
-              <ReputationBadge score={listing.profiles.reputation_score} size="sm" />
+              <ReputationBadge score={listing.profiles.reputation_score} totalReviews={listing.profiles.total_reviews} size="sm" />
             </div>
           </div>
         </div>
