@@ -75,7 +75,7 @@ export async function createHousingListing(input: HousingListingInput) {
 }
 
 export async function updateHousingListing(id: string, input: Partial<HousingListingInput>) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
