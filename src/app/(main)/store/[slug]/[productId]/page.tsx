@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
 import { StoreBuyButton } from "@/components/store/StoreBuyButton";
 
@@ -88,15 +88,7 @@ export default async function StoreProductPage({
             <p className="mt-1 text-sm leading-relaxed text-zinc-400 whitespace-pre-wrap">{product.description}</p>
           </div>
 
-          {product.product_type === "digital" && product.digital_file_url && (
-            <div className="flex items-start gap-2 rounded-lg bg-zinc-900/50 p-3">
-              <Package className="mt-0.5 h-4 w-4 text-zinc-500" />
-              <div>
-                <p className="text-xs font-medium text-zinc-300">Digital Delivery</p>
-                <p className="text-xs text-zinc-500">Instant download after purchase</p>
-              </div>
-            </div>
-          )}
+          
 
           {isOwner ? (
             <div className="rounded-lg border border-yellow-800 bg-yellow-900/20 p-4">
