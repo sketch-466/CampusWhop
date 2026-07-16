@@ -111,7 +111,7 @@ export async function incrementHousingViews(id: string) {
 }
 
 export async function getMyHousingListings() {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -143,7 +143,7 @@ export async function getRoommateListings(filters?: {
   preferred_gender?: string
   max_budget?: number
 }): Promise<RoommateListingWithPoster[]> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   let query = supabase
     .from('roommate_listings')
     .select('*, profiles!roommate_listings_poster_id_fkey(id, full_name, avatar_url)')
@@ -193,7 +193,7 @@ export async function createRoommateListing(input: RoommateListingInput) {
 }
 
 export async function updateRoommateListing(id: string, input: Partial<RoommateListingInput>) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
