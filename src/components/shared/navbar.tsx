@@ -1,51 +1,29 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import { signOut } from "@/lib/actions/auth";
+import { useState } from 'react'
+import Link from 'next/link'
+import { signOut } from '@/lib/actions/auth'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "@/components/ui/avatar";
-import {
-  User,
-  Settings,
-  LogOut,
-  ChevronDown,
-  ShoppingBag,
-  LayoutDashboard,
-  Shield,
-  CreditCard,
-  Briefcase,
-  Home,
-  Store,
-} from "lucide-react";
+  User, Settings, LogOut, ChevronDown, ShoppingBag,
+  LayoutDashboard, Shield, CreditCard, Briefcase, Home, Store,
+} from 'lucide-react'
 
 interface NavbarProps {
   user: {
-    full_name: string | null;
-    avatar_url: string | null;
-    email: string;
-    is_admin?: boolean;
-  };
+    full_name: string | null
+    avatar_url: string | null
+    email: string
+    is_admin?: boolean
+  }
 }
 
 export function Navbar({ user }: NavbarProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const initials = user.full_name
-    ? user.full_name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : (user.email ?? "U")[0].toUpperCase();
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
+    ? user.full_name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : (user.email ?? 'U')[0].toUpperCase()
 
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
@@ -57,69 +35,32 @@ export function Navbar({ user }: NavbarProps) {
         <div className="flex items-center gap-4">
           {/* Desktop Nav Links */}
           <div className="hidden items-center gap-3 sm:flex">
-            <Link
-              href="/dashboard"
-              className="text-sm text-zinc-400 transition-colors hover:text-white"
-            >
+            <Link href="/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <LayoutDashboard className="inline h-4 w-4 mr-1" />
               Dashboard
             </Link>
-            <Link
-              href="/marketplace"
-              className="text-sm text-zinc-400 transition-colors hover:text-white"
-            >
+            <Link href="/marketplace" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <ShoppingBag className="inline h-4 w-4 mr-1" />
               Marketplace
             </Link>
-            <Link
-              href="/housing"
-              className="text-sm text-zinc-400 transition-colors hover:text-white"
-            >
+            <Link href="/housing" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <Home className="inline h-4 w-4 mr-1" />
               Housing
             </Link>
-            <Link
-              href="/jobs"
-              className="text-sm text-zinc-400 transition-colors hover:text-white"
-            >
+            <Link href="/jobs" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <Briefcase className="inline h-4 w-4 mr-1" />
               Jobs
             </Link>
-            <Link
-              href="/store/dashboard"
-              className="text-sm text-zinc-400 transition-colors hover:text-white"
-            >
+            <Link href="/store/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <Store className="inline h-4 w-4 mr-1" />
               Store
             </Link>
-           {user.is_admin && (
-  <>
-    <Link
-      href="/admin/listings"
-      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
-      onClick={() => setDropdownOpen(false)}
-    >
-      <Shield className="h-4 w-4" />
-      Admin: Listings
-    </Link>
-    <Link
-      href="/admin/jobs"
-      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
-      onClick={() => setDropdownOpen(false)}
-    >
-      <Shield className="h-4 w-4" />
-      Admin: Jobs
-    </Link>
-    <Link
-      href="/admin/housing"
-      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
-      onClick={() => setDropdownOpen(false)}
-    >
-      <Shield className="h-4 w-4" />
-      Admin: Housing
-    </Link>
-  </>
-)}
+            {user.is_admin && (
+              <Link href="/admin/listings" className="text-sm text-amber-400 transition-colors hover:text-amber-300">
+                <Shield className="inline h-4 w-4 mr-1" />
+                Admin
+              </Link>
+            )}
           </div>
 
           {/* User Dropdown */}
@@ -130,7 +71,7 @@ export function Navbar({ user }: NavbarProps) {
             >
               <Avatar className="h-7 w-7">
                 {user.avatar_url && (
-                  <AvatarImage src={user.avatar_url} alt={user.full_name || ""} />
+                  <AvatarImage src={user.avatar_url} alt={user.full_name || ''} />
                 )}
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
@@ -142,127 +83,97 @@ export function Navbar({ user }: NavbarProps) {
 
             {dropdownOpen && (
               <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setDropdownOpen(false)}
-                />
+                <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                 <div className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl">
-                  
-                  <Link
-                    href="/profile"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+
+                  <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <User className="h-4 w-4" />
                     Profile
                   </Link>
 
-                  <Link
-                    href="/marketplace"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  {/* Mobile-only nav links */}
+                  <Link href="/marketplace" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <ShoppingBag className="h-4 w-4" />
                     Marketplace
                   </Link>
-
-                  <Link
-                    href="/housing"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/housing" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <Home className="h-4 w-4" />
                     Housing
                   </Link>
-
-                  <Link
-                    href="/jobs"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/jobs" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <Briefcase className="h-4 w-4" />
                     Jobs
                   </Link>
-
-                  <Link
-                    href="/store/dashboard"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/store/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <Store className="h-4 w-4" />
                     My Store
                   </Link>
 
-                  <Link
-                    href="/seller/setup"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <div className="my-1 border-t border-zinc-800" />
+
+                  <Link href="/seller/setup" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <CreditCard className="h-4 w-4" />
                     Seller Setup
                   </Link>
-
-                  <Link
-                    href="/orders"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <ShoppingBag className="h-4 w-4" />
                     My Orders
                   </Link>
-
-                  <Link
-                    href="/store/dashboard"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/store/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <Store className="h-4 w-4" />
                     My Store
                   </Link>
-
-                  <Link
-                    href="/jobs/applications"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/marketplace/my-listings" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <ShoppingBag className="h-4 w-4" />
+                    My Listings
+                  </Link>
+                  <Link href="/housing/my-listings" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <Home className="h-4 w-4" />
+                    My Housing Posts
+                  </Link>
+                  <Link href="/jobs/applications" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <Briefcase className="h-4 w-4" />
                     My Applications
                   </Link>
-
-                  <Link
-                    href="/jobs/my-posts"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <Link href="/jobs/my-posts" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <Briefcase className="h-4 w-4" />
                     My Job Posts
                   </Link>
 
                   {user.is_admin && (
-                    <Link
-                      href="/admin/listings"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <Shield className="h-4 w-4" />
-                      Admin Panel
-                    </Link>
+                    <>
+                      <div className="my-1 border-t border-zinc-800" />
+                      <Link href="/admin/listings" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
+                        <Shield className="h-4 w-4" />
+                        Admin: Listings
+                      </Link>
+                      <Link href="/admin/jobs" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
+                        <Shield className="h-4 w-4" />
+                        Admin: Jobs
+                      </Link>
+                      <Link href="/admin/housing" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
+                        <Shield className="h-4 w-4" />
+                        Admin: Housing
+                      </Link>
+                      <Link href="/admin/stores" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
+                        <Shield className="h-4 w-4" />
+                        Admin: Stores
+                      </Link>
+                      <Link href="/admin/disputes" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
+                        <Shield className="h-4 w-4" />
+                        Admin: Disputes
+                      </Link>
+                    </>
                   )}
 
-                  <button
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-                    onClick={() => setDropdownOpen(false)}
-                  >
+                  <div className="my-1 border-t border-zinc-800" />
+
+                  <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <Settings className="h-4 w-4" />
                     Settings
                   </button>
 
-                  <div className="my-1 border-t border-zinc-800" />
-
-                  <button
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800"
-                    onClick={handleSignOut}
-                  >
+                  <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800" onClick={() => { setDropdownOpen(false); signOut() }}>
                     <LogOut className="h-4 w-4" />
                     Sign Out
                   </button>
@@ -273,5 +184,5 @@ export function Navbar({ user }: NavbarProps) {
         </div>
       </div>
     </nav>
-  );
+  )
 }
