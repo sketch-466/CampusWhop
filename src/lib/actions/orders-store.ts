@@ -4,8 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { paystackClient } from '@/lib/paystack/client'
-
+import { paystackRequest } from '@/lib/paystack/client'
 const PLATFORM_FEE_PERCENT = 0.10
 
 export async function initializeStoreOrder(
@@ -68,7 +67,9 @@ export async function initializeStoreOrder(
   const reference = `cw_store_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`
 
   // Initialize Paystack transaction
-  const paystackResponse = await paystackClient.initializeTransaction({
+  const paystackResponse = await paystackRequest('/transaction/initialize', {
+  method: 'POST',
+  body: JSON.stringify({
     email: buyerProfile.email,
     amount,
     reference,
@@ -95,11 +96,12 @@ export async function initializeStoreOrder(
         },
       ],
     },
-  })
+  }),
+})
 
-  if (!paystackResponse.status) {
-    return { error: 'Failed to initialize payment. Please try again.' }
-  }
+if (!paystackResponse.status) {
+  return { error: 'Failed to initialize payment. Please try again.' }
+}
 
   // Create pending order
   const { error: orderError } = await supabase
@@ -141,8 +143,8 @@ export async function verifyStoreOrder(reference: string) {
   if (order.status !== 'pending') return { success: true, order }
 
   // Verify with Paystack
-  const verification = await paystackClient.verifyTransaction(reference)
-  if (!verification.status || verification.data.status !== 'success') {
+  const verification = await paystackRequest(`/transaction/verify/${reference}`)
+if (!verification.status || verification.data.status !== 'success') {
     return { error: 'Payment verification failed' }
   }
 
