@@ -82,13 +82,13 @@ export default async function DashboardPage() {
       available: true,
     },
     {
-     {
-  icon: GraduationCap,
-  title: 'Opportunities',
-  subtitle: 'Scholarships & internships',
-  href: '/opportunities',
-  available: true,
-},
+      icon: GraduationCap,
+      title: 'Opportunities',
+      subtitle: 'Scholarships & internships',
+      href: '/opportunities',
+      available: true,
+    },
+  ]
 
   const adminLinks = [
     { label: 'Listings', href: '/admin/listings' },
@@ -96,6 +96,7 @@ export default async function DashboardPage() {
     { label: 'Housing', href: '/admin/housing' },
     { label: 'Stores', href: '/admin/stores' },
     { label: 'Disputes', href: '/admin/disputes' },
+    { label: 'Opportunities', href: '/admin/opportunities' },
   ]
 
   return (
