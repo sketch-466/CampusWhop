@@ -82,13 +82,13 @@ export default async function DashboardPage() {
       available: true,
     },
     {
-      icon: GraduationCap,
-      title: 'Opportunities',
-      subtitle: 'Scholarships & internships',
-      href: '#',
-      available: false,
-    },
-  ]
+     {
+  icon: GraduationCap,
+  title: 'Opportunities',
+  subtitle: 'Scholarships & internships',
+  href: '/opportunities',
+  available: true,
+},
 
   const adminLinks = [
     { label: 'Listings', href: '/admin/listings' },

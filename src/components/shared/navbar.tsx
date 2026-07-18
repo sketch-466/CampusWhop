@@ -6,7 +6,7 @@ import { signOut } from '@/lib/actions/auth'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
-  LayoutDashboard, Shield, CreditCard, Briefcase, Home, Store,
+  LayoutDashboard, Shield, CreditCard, Briefcase, Home, Store, GraduationCap,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -51,10 +51,14 @@ export function Navbar({ user }: NavbarProps) {
               <Briefcase className="inline h-4 w-4 mr-1" />
               Jobs
             </Link>
-            <Link href="/store/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
-              <Store className="inline h-4 w-4 mr-1" />
-              Store
-            </Link>
+              <Link href="/store/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
+  <Store className="inline h-4 w-4 mr-1" />
+  Store
+</Link>
+<Link href="/opportunities" className="text-sm text-zinc-400 transition-colors hover:text-white">
+  <GraduationCap className="inline h-4 w-4 mr-1" />
+  Opportunities
+</Link>
             {user.is_admin && (
               <Link href="/admin/listings" className="text-sm text-amber-400 transition-colors hover:text-amber-300">
                 <Shield className="inline h-4 w-4 mr-1" />
@@ -160,9 +164,13 @@ export function Navbar({ user }: NavbarProps) {
                         Admin: Stores
                       </Link>
                       <Link href="/admin/disputes" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
-                        <Shield className="h-4 w-4" />
-                        Admin: Disputes
-                      </Link>
+  <Shield className="h-4 w-4" />
+  Admin: Disputes
+</Link>
+<Link href="/admin/opportunities" className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 transition-colors hover:bg-zinc-800 hover:text-amber-300" onClick={() => setDropdownOpen(false)}>
+  <Shield className="h-4 w-4" />
+  Admin: Opportunities
+</Link>
                     </>
                   )}
 

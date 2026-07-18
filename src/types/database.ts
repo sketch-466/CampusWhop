@@ -134,3 +134,44 @@ export type StoreOrderWithDetails = StoreOrder & {
     avatar_url: string | null
   }
 }
+
+// ─── OPPORTUNITIES ────────────────────────────────────────────────
+
+export type OpportunityCategory = 'scholarship' | 'internship' | 'grant' | 'competition'
+export type OpportunityStatus = 'pending' | 'active' | 'rejected' | 'expired'
+
+export type Opportunity = {
+  id: string
+  poster_id: string
+  title: string
+  description: string
+  category: OpportunityCategory
+  organization: string
+  location: string | null
+  is_remote: boolean
+  apply_url: string
+  deadline: string | null
+  eligibility: string | null
+  amount: string | null
+  status: OpportunityStatus
+  rejection_reason: string | null
+  views_count: number
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type OpportunityWithPoster = Opportunity & {
+  profiles: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
+}
+
+export type SavedOpportunity = {
+  id: string
+  user_id: string
+  opportunity_id: string
+  created_at: string
+}
