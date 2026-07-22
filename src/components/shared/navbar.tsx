@@ -88,7 +88,7 @@ export function Navbar({ user }: NavbarProps) {
             {dropdownOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                <div className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl">
+                <div className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl max-h-[80vh] overflow-y-auto">
 
                   <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <User className="h-4 w-4" />
@@ -176,10 +176,10 @@ export function Navbar({ user }: NavbarProps) {
 
                   <div className="my-1 border-t border-zinc-800" />
 
-                  <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </button>
+                 <Link href="/profile/edit" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+  <Settings className="h-4 w-4" />
+  Settings
+</Link>
 
                   <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800" onClick={() => { setDropdownOpen(false); signOut() }}>
                     <LogOut className="h-4 w-4" />
