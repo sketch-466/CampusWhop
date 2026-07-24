@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Package } from "lucide-react";
 import { BuyButton } from "@/components/shared/buy-button";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
+import ViewTracker from "@/components/shared/view-tracker";
 
-// Helper to normalize Supabase joined relation
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
   if (Array.isArray(rel)) return rel[0] ?? null;
@@ -75,6 +75,8 @@ export default async function ListingDetailPage({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
+      <ViewTracker entityType="listing" entityId={id} userId={user?.id ?? null} />
+
       <Link
         href="/marketplace"
         className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white"
@@ -135,10 +137,7 @@ export default async function ListingDetailPage({
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 {seller.avatar_url && (
-                  <AvatarImage
-                    src={seller.avatar_url}
-                    alt={seller.full_name || ""}
-                  />
+                  <AvatarImage src={seller.avatar_url} alt={seller.full_name || ""} />
                 )}
                 <AvatarFallback className="text-sm">{initials}</AvatarFallback>
               </Avatar>
@@ -147,7 +146,8 @@ export default async function ListingDetailPage({
                   {seller.full_name || "Unknown Seller"}
                 </p>
                 <p className="text-xs text-zinc-400">
-                  {seller.university || "University not set"} · <ReputationBadge
+                  {seller.university || "University not set"} ·{" "}
+                  <ReputationBadge
                     score={seller.reputation_score || 0}
                     totalReviews={seller.total_reviews || 0}
                   />

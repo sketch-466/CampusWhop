@@ -1,13 +1,13 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getJobById, hasAppliedToJob, applyToJob } from '@/lib/actions/jobs'
+import { getJobById, hasAppliedToJob } from '@/lib/actions/jobs'
 import { ReputationBadge } from '@/components/shared/reputation-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, MapPin, Clock, DollarSign, ExternalLink, Mail, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { JobApplicationForm } from '@/components/shared/job-application-form'
+import ViewTracker from '@/components/shared/view-tracker'
 
 interface JobDetailPageProps {
   params: Promise<{ id: string }>
@@ -34,7 +34,6 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isOwner = user?.id === job.poster_id
-  const isAdmin = false // Checked server-side in getJobById
 
   const { hasApplied } = await hasAppliedToJob(id)
 
@@ -42,6 +41,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
+      <ViewTracker entityType="job" entityId={id} userId={user?.id ?? null} />
+
       <Link
         href="/jobs"
         className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white"

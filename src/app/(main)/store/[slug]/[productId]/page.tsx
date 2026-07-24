@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
 import { StoreBuyButton } from "@/components/store/StoreBuyButton";
+import ViewTracker from "@/components/shared/view-tracker";
 
 export default async function StoreProductPage({
   params,
@@ -34,6 +35,8 @@ export default async function StoreProductPage({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
+      <ViewTracker entityType="store_product" entityId={productId} userId={user?.id ?? null} />
+
       <Link href={`/store/${slug}`} className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white">
         <ArrowLeft className="h-4 w-4" />
         Back to {store.store_name}
@@ -60,12 +63,12 @@ export default async function StoreProductPage({
         </div>
 
         <div className="space-y-4">
-         <div className="flex items-center gap-2">
-  <Badge variant={product.product_type === "physical" ? "outline" : "default"}>
-    {product.product_type === "physical" ? "Physical" : "Digital"}
-  </Badge>
-  {isOutOfStock && <Badge variant="destructive">Out of Stock</Badge>}
-</div>
+          <div className="flex items-center gap-2">
+            <Badge variant={product.product_type === "physical" ? "outline" : "default"}>
+              {product.product_type === "physical" ? "Physical" : "Digital"}
+            </Badge>
+            {isOutOfStock && <Badge variant="destructive">Out of Stock</Badge>}
+          </div>
 
           <h1 className="text-2xl font-bold text-white">{product.title}</h1>
           <p className="text-3xl font-bold text-emerald-500">₦{product.price.toLocaleString()}</p>
@@ -87,8 +90,6 @@ export default async function StoreProductPage({
             <h3 className="font-medium text-white">Description</h3>
             <p className="mt-1 text-sm leading-relaxed text-zinc-400 whitespace-pre-wrap">{product.description}</p>
           </div>
-
-          
 
           {isOwner ? (
             <div className="rounded-lg border border-yellow-800 bg-yellow-900/20 p-4">

@@ -7,6 +7,7 @@ import {
   unsaveOpportunity,
   checkIfSaved,
 } from '@/lib/actions/opportunities'
+import ViewTracker from '@/components/shared/view-tracker'
 
 const CATEGORY_STYLES: Record<string, string> = {
   scholarship: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -72,6 +73,8 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
+      <ViewTracker entityType="opportunity" entityId={id} userId={user?.id ?? null} />
+
       {/* Header */}
       <div className="border-b border-zinc-800 bg-zinc-900 px-4 py-5">
         <a

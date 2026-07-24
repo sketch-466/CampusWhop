@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Briefcase, Home, Store, GraduationCap,
+  BarChart2,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -51,15 +52,14 @@ export function Navbar({ user }: NavbarProps) {
               <Briefcase className="inline h-4 w-4 mr-1" />
               Jobs
             </Link>
-              <Link href="/store/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
-  <Store className="inline h-4 w-4 mr-1" />
-  Store
-</Link>
-<Link href="/opportunities" className="text-sm text-zinc-400 transition-colors hover:text-white">
-  <GraduationCap className="inline h-4 w-4 mr-1" />
-  Opportunities
-</Link>
-            
+            <Link href="/store/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
+              <Store className="inline h-4 w-4 mr-1" />
+              Store
+            </Link>
+            <Link href="/opportunities" className="text-sm text-zinc-400 transition-colors hover:text-white">
+              <GraduationCap className="inline h-4 w-4 mr-1" />
+              Opportunities
+            </Link>
           </div>
 
           {/* User Dropdown */}
@@ -139,14 +139,30 @@ export function Navbar({ user }: NavbarProps) {
                     My Job Posts
                   </Link>
 
-                  
+                  <div className="my-1 border-t border-zinc-800" />
+
+                  {/* Analytics links */}
+                  <Link href="/profile/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <BarChart2 className="h-4 w-4" />
+                    My Activity
+                  </Link>
+                  <Link href="/store/dashboard/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <BarChart2 className="h-4 w-4" />
+                    Store Analytics
+                  </Link>
+                  {user.is_admin && (
+                    <Link href="/admin/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300" onClick={() => setDropdownOpen(false)}>
+                      <Shield className="h-4 w-4" />
+                      Platform Analytics
+                    </Link>
+                  )}
 
                   <div className="my-1 border-t border-zinc-800" />
 
-                 <Link href="/profile/edit" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
-  <Settings className="h-4 w-4" />
-  Settings
-</Link>
+                  <Link href="/profile/edit" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Link>
 
                   <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800" onClick={() => { setDropdownOpen(false); signOut() }}>
                     <LogOut className="h-4 w-4" />

@@ -1,9 +1,10 @@
- import { notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getHousingListingById, getHousingReviews, incrementHousingViews } from '@/lib/actions/housing'
 import { HousingReviewFormWrapper } from '@/components/shared/housing-review-form-wrapper'
 import { ReputationBadge } from '@/components/shared/reputation-badge'
 import { StarRating } from '@/components/shared/star-rating'
+import ViewTracker from '@/components/shared/view-tracker'
 
 const ROOM_TYPE_LABELS: Record<string, string> = {
   self_con: 'Self-Contained',
@@ -59,6 +60,8 @@ export default async function HousingDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
+      <ViewTracker entityType="housing" entityId={id} userId={user?.id ?? null} />
+
       {/* Image Gallery */}
       <div className="relative w-full bg-zinc-900">
         {listing.images.length > 0 ? (
@@ -89,7 +92,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Verified badge */}
         {listing.is_verified && (
           <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-emerald-500/90 px-2.5 py-1 text-xs font-semibold text-white">
             <span>✓</span>
@@ -99,7 +101,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
       </div>
 
       <div className="px-4 py-5 space-y-5">
-        {/* Title + Price */}
         <div>
           <div className="flex items-start justify-between gap-2">
             <h1 className="text-lg font-bold text-zinc-100 leading-tight">
@@ -123,7 +124,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           <p className="text-xs text-zinc-500">🎓 {listing.university}</p>
         </div>
 
-        {/* Rating summary */}
         {avgRating !== null && (
           <div className="flex items-center gap-2">
             <StarRating value={Math.round(avgRating)} readonly />
@@ -136,7 +136,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* WhatsApp CTA */}
         {!isOwner && (
           <a
             href={whatsappUrl}
@@ -149,7 +148,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           </a>
         )}
 
-        {/* Description */}
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-zinc-200">About this place</h2>
           <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
@@ -157,7 +155,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Amenities */}
         {listing.amenities.length > 0 && (
           <div className="space-y-2">
             <h2 className="text-sm font-semibold text-zinc-200">Amenities</h2>
@@ -180,7 +177,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Poster Card */}
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
             Posted by
@@ -214,7 +210,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Views + meta */}
         <p className="text-xs text-zinc-600 text-center">
           👁 {listing.views_count} views ·{' '}
           Listed {new Date(listing.created_at).toLocaleDateString('en-NG', {
@@ -224,7 +219,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
           })}
         </p>
 
-        {/* Reviews Section */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-zinc-200">
             Reviews ({reviews.length})
@@ -258,7 +252,7 @@ export default async function HousingDetailPage({ params }: PageProps) {
                     {review.profiles.full_name}
                   </p>
                 </div>
-              <StarRating value={review.rating} readonly />
+                <StarRating value={review.rating} readonly />
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed">{review.comment}</p>
               <p className="text-xs text-zinc-600">
@@ -271,7 +265,6 @@ export default async function HousingDetailPage({ params }: PageProps) {
             </div>
           ))}
 
-          {/* Review form */}
           {user && !isOwner && !alreadyReviewed && (
             <HousingReviewFormWrapper listingId={listing.id} />
           )}
