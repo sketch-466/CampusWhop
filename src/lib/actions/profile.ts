@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { profileSchema, type ProfileInput } from "@/lib/validations/profile";
 import { revalidatePath } from "next/cache";
+import { uploadToB2, deleteFromB2, generateFileName } from "@/lib/storage/b2";
 
 export async function updateProfile(formData: ProfileInput) {
   const validated = profileSchema.safeParse(formData);
@@ -49,13 +50,11 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "No file provided" };
   }
 
-  // Validate file type
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!allowedTypes.includes(file.type)) {
     return { error: "Only JPG, PNG, and WEBP images are allowed" };
   }
 
-  // Validate file size (2MB)
   const maxSize = 2 * 1024 * 1024;
   if (file.size > maxSize) {
     return { error: "File must be less than 2MB" };
@@ -71,29 +70,27 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "Not authenticated" };
   }
 
-  // Generate unique filename
-  const ext = file.name.split(".").pop();
-  const timestamp = Date.now();
-  const filePath = `${user.id}/${timestamp}.${ext}`;
+  // Get existing avatar URL to delete from B2 after upload
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", user.id)
+    .single();
 
-  // Upload to storage
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
+  // Convert file to buffer
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const fileName = `${user.id}-${generateFileName(file.name)}`;
 
-  if (uploadError) {
+  // Upload to B2
+  let publicUrl: string;
+  try {
+    publicUrl = await uploadToB2(buffer, fileName, "avatars", file.type);
+  } catch {
     return { error: "Failed to upload avatar" };
   }
 
-  // Get public URL
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-  // Update profile
+  // Update profile with new URL
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
@@ -104,6 +101,11 @@ export async function uploadAvatar(formData: FormData) {
 
   if (updateError) {
     return { error: "Failed to update profile with avatar" };
+  }
+
+  // Delete old avatar from B2 if it existed and was a B2 URL
+  if (profile?.avatar_url && profile.avatar_url.includes("backblazeb2.com")) {
+    await deleteFromB2(profile.avatar_url);
   }
 
   revalidatePath("/dashboard");

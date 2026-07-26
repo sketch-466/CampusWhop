@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 type HousingImageUploadProps = {
   value: string[]
@@ -26,7 +25,6 @@ export function HousingImageUpload({ value, onChange, error }: HousingImageUploa
     setUploading(true)
     setUploadError(null)
 
-    const supabase = createClient()
     const uploaded: string[] = []
 
     for (const file of selected) {
@@ -40,20 +38,27 @@ export function HousingImageUpload({ value, onChange, error }: HousingImageUploa
         continue
       }
 
-      const ext = file.name.split('.').pop()
-      const path = `${crypto.randomUUID()}.${ext}`
+      try {
+        const formData = new FormData()
+        formData.append('image', file)
 
-      const { error: uploadErr } = await supabase.storage
-        .from('housing')
-        .upload(path, file, { upsert: false })
+        const res = await fetch('/api/upload/housing', {
+          method: 'POST',
+          body: formData,
+        })
 
-      if (uploadErr) {
-        setUploadError(uploadErr.message)
+        const result = await res.json()
+
+        if (!res.ok || result.error) {
+          setUploadError(result.error ?? 'Upload failed')
+          continue
+        }
+
+        uploaded.push(result.url)
+      } catch {
+        setUploadError('Upload failed')
         continue
       }
-
-      const { data } = supabase.storage.from('housing').getPublicUrl(path)
-      uploaded.push(data.publicUrl)
     }
 
     onChange([...value, ...uploaded])

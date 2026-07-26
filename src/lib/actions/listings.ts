@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listingSchema, type ListingInput } from "@/lib/validations/listing";
 import { revalidatePath } from "next/cache";
+import { uploadToB2, generateFileName } from "@/lib/storage/b2";
 
 // Helper to normalize Supabase joined relation
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
@@ -60,7 +61,7 @@ export async function createListing(data: ListingInput, images: string[]) {
   return { success: true, listingId: listing.id };
 }
 
-export async function uploadListingImage(formData: FormData, listingId: string) {
+export async function uploadListingImage(formData: FormData) {
   const file = formData.get("image") as File;
 
   if (!file) {
@@ -87,26 +88,18 @@ export async function uploadListingImage(formData: FormData, listingId: string) 
     return { error: "Not authenticated" };
   }
 
-  const ext = file.name.split(".").pop();
-  const timestamp = Date.now();
-  const filePath = `${user.id}/${listingId}/${timestamp}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const fileName = `${user.id}-${generateFileName(file.name)}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("listings")
-    .upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-
-  if (uploadError) {
+  let url: string;
+  try {
+    url = await uploadToB2(buffer, fileName, "listings", file.type);
+  } catch {
     return { error: "Failed to upload image" };
   }
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("listings").getPublicUrl(filePath);
-
-  return { success: true, url: publicUrl };
+  return { success: true, url };
 }
 
 export async function getActiveListings(filters?: {

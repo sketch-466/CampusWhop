@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { storeSchema, storeProductSchema } from "@/lib/validations/store";
 import { revalidatePath } from "next/cache";
+import { uploadToB2, generateFileName } from "@/lib/storage/b2";
 
 interface ActionResult {
   success: boolean;
@@ -121,7 +122,6 @@ export async function createStore(formData: FormData): Promise<ActionResult> {
     .single();
 
   if (insertError) {
-    console.error("Store insert error:", insertError);
     if (insertError.code === "23505") {
       return { success: false, error: "This slug is already taken. Try another one." };
     }
@@ -205,7 +205,6 @@ export async function updateStore(formData: FormData): Promise<ActionResult> {
     .eq("owner_id", user.id);
 
   if (updateError) {
-    console.error("Store update error:", updateError);
     return { success: false, error: "Failed to update store. Please try again." };
   }
 
@@ -229,10 +228,7 @@ export async function getMyStore() {
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (error) {
-    console.error("Get my store error:", error);
-    return { store: null };
-  }
+  if (error) return { store: null };
 
   return { store: data };
 }
@@ -343,7 +339,6 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
     .single();
 
   if (insertError) {
-    console.error("Store product insert error:", insertError);
     return { success: false, error: "Failed to create product. Please try again." };
   }
 
@@ -415,7 +410,6 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
     .eq("id", productId);
 
   if (updateError) {
-    console.error("Store product update error:", updateError);
     return { success: false, error: "Failed to update product. Please try again." };
   }
 
@@ -454,7 +448,6 @@ export async function archiveStoreProduct(productId: string): Promise<ActionResu
     .eq("id", productId);
 
   if (error) {
-    console.error("Archive product error:", error);
     return { success: false, error: "Failed to archive product" };
   }
 
@@ -480,7 +473,6 @@ export async function getStoreProducts(storeId: string, includePending = false) 
   const { data, error } = await query;
 
   if (error) {
-    console.error("Get store products error:", error);
     return { products: [] as StoreProduct[], error: "Failed to fetch products" };
   }
 
@@ -551,26 +543,16 @@ export async function uploadStoreImage(formData: FormData) {
     return { success: false, error: "Not authenticated" };
   }
 
-  const ext = file.name.split(".").pop();
-  const timestamp = Date.now();
-  const filePath = `${user.id}/store/${timestamp}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const fileName = `${user.id}-${generateFileName(file.name)}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("store-assets")
-    .upload(filePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-
-  if (uploadError) {
+  try {
+    const url = await uploadToB2(buffer, fileName, "store-assets", file.type);
+    return { success: true, url };
+  } catch {
     return { success: false, error: "Failed to upload image" };
   }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("store-assets").getPublicUrl(filePath);
-
-  return { success: true, url: publicUrl };
 }
 
 export async function getPendingStores() {
