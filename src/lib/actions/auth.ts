@@ -22,16 +22,12 @@ import {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-// Helper: Generate cryptographically secure random token
 function generateToken(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-// Helper: Get expiration timestamp
 function getExpiration(hours: number): string {
   return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
@@ -45,15 +41,13 @@ export async function registerUser(formData: RegisterInput) {
   const { email, password, fullName } = validated.data;
 
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  // Create user in Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: {
-        full_name: fullName,
-      },
+      data: { full_name: fullName },
     },
   });
 
@@ -63,12 +57,21 @@ export async function registerUser(formData: RegisterInput) {
 
   const userId = authData.user.id;
 
-  // Generate verification token
+  // Update profile using admin client
+  const { error: profileError } = await adminClient
+    .from("profiles")
+    .update({ full_name: fullName })
+    .eq("id", userId);
+
+  if (profileError) {
+    return { error: "Failed to update profile" };
+  }
+
+  // Insert token using admin client (bypasses RLS)
   const token = generateToken();
   const expiresAt = getExpiration(24);
 
-  // Insert token
-  const { error: tokenError } = await supabase
+  const { error: tokenError } = await adminClient
     .from("email_verification_tokens")
     .insert({
       user_id: userId,
@@ -78,16 +81,6 @@ export async function registerUser(formData: RegisterInput) {
 
   if (tokenError) {
     return { error: "Failed to generate verification token" };
-  }
-
-  // Update profile with full name
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ full_name: fullName })
-    .eq("id", userId);
-
-  if (profileError) {
-    return { error: "Failed to update profile" };
   }
 
   // Send verification email
@@ -107,10 +100,9 @@ export async function registerUser(formData: RegisterInput) {
 }
 
 export async function verifyEmail(token: string) {
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  // Look up token
-  const { data: tokenData, error: tokenError } = await supabase
+  const { data: tokenData, error: tokenError } = await adminClient
     .from("email_verification_tokens")
     .select("*")
     .eq("token", token)
@@ -120,18 +112,15 @@ export async function verifyEmail(token: string) {
     return { error: "Invalid or expired token" };
   }
 
-  // Check if already used
   if (tokenData.used_at) {
     return { error: "Token has already been used" };
   }
 
-  // Check expiration
   if (new Date(tokenData.expires_at) < new Date()) {
     return { error: "Token has expired" };
   }
 
-  // Mark token as used
-  const { error: updateTokenError } = await supabase
+  const { error: updateTokenError } = await adminClient
     .from("email_verification_tokens")
     .update({ used_at: new Date().toISOString() })
     .eq("id", tokenData.id);
@@ -140,8 +129,7 @@ export async function verifyEmail(token: string) {
     return { error: "Failed to verify token" };
   }
 
-  // Mark email as verified
-  const { error: profileError } = await supabase
+  const { error: profileError } = await adminClient
     .from("profiles")
     .update({ email_verified: true })
     .eq("id", tokenData.user_id);
@@ -154,10 +142,10 @@ export async function verifyEmail(token: string) {
 }
 
 export async function resendVerificationEmail(userId: string) {
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  // Rate limit: Check if token created in last 60 seconds
-  const { data: recentTokens } = await supabase
+  // Rate limit: check if token created in last 60 seconds
+  const { data: recentTokens } = await adminClient
     .from("email_verification_tokens")
     .select("created_at")
     .eq("user_id", userId)
@@ -174,8 +162,7 @@ export async function resendVerificationEmail(userId: string) {
     }
   }
 
-  // Get user email
-  const { data: profile } = await supabase
+  const { data: profile } = await adminClient
     .from("profiles")
     .select("email")
     .eq("id", userId)
@@ -185,11 +172,10 @@ export async function resendVerificationEmail(userId: string) {
     return { error: "User not found" };
   }
 
-  // Generate new token
   const token = generateToken();
   const expiresAt = getExpiration(24);
 
-  const { error: tokenError } = await supabase
+  const { error: tokenError } = await adminClient
     .from("email_verification_tokens")
     .insert({
       user_id: userId,
@@ -201,7 +187,6 @@ export async function resendVerificationEmail(userId: string) {
     return { error: "Failed to generate new token" };
   }
 
-  // Send email
   const verifyUrl = `${SITE_URL}/verify?token=${token}`;
   try {
     await resend.emails.send({
@@ -228,16 +213,12 @@ export async function loginUser(formData: LoginInput) {
   const supabase = await createClient();
 
   const { data: authData, error: authError } =
-    await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    await supabase.auth.signInWithPassword({ email, password });
 
   if (authError || !authData.user) {
     return { error: authError?.message || "Invalid credentials" };
   }
 
-  // Check if email is verified
   const { data: profile } = await supabase
     .from("profiles")
     .select("email_verified, onboarding_completed")
@@ -292,17 +273,15 @@ export async function requestPasswordReset(formData: ForgotPasswordInput) {
 
   const { email } = validated.data;
 
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  // Check if user exists (but don't reveal this to client)
-  const { data: userData } = await supabase
+  const { data: userData } = await adminClient
     .from("profiles")
     .select("id")
     .eq("email", email)
     .single();
 
   if (!userData) {
-    // Return success even if email doesn't exist (prevents enumeration)
     return {
       success: true,
       message: "If an account exists, a reset email has been sent",
@@ -310,9 +289,9 @@ export async function requestPasswordReset(formData: ForgotPasswordInput) {
   }
 
   const token = generateToken();
-  const expiresAt = getExpiration(1); // 1 hour
+  const expiresAt = getExpiration(1);
 
-  const { error: tokenError } = await supabase
+  const { error: tokenError } = await adminClient
     .from("password_reset_tokens")
     .insert({
       user_id: userData.id,
@@ -353,10 +332,9 @@ export async function resetPassword(formData: ResetPasswordInput) {
 
   const { token, password } = validated.data;
 
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  // Look up token
-  const { data: tokenData, error: tokenError } = await supabase
+  const { data: tokenData, error: tokenError } = await adminClient
     .from("password_reset_tokens")
     .select("*")
     .eq("token", token)
@@ -374,9 +352,6 @@ export async function resetPassword(formData: ResetPasswordInput) {
     return { error: "Token has expired" };
   }
 
-  // Use admin client to update password
-  const adminClient = createAdminClient();
-
   const { error: updateError } = await adminClient.auth.admin.updateUserById(
     tokenData.user_id,
     { password }
@@ -386,8 +361,7 @@ export async function resetPassword(formData: ResetPasswordInput) {
     return { error: "Failed to reset password" };
   }
 
-  // Mark token as used
-  await supabase
+  await adminClient
     .from("password_reset_tokens")
     .update({ used_at: new Date().toISOString() })
     .eq("id", tokenData.id);
