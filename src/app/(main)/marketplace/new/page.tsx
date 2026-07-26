@@ -81,8 +81,7 @@ export default function NewListingPage() {
     for (const file of Array.from(files)) {
       const formData = new FormData();
       formData.append("image", file);
-      const tempId = `temp_${Date.now()}`;
-      const result = await uploadListingImage(formData, tempId);
+     const result = await uploadListingImage(formData);
       if (result.error) {
         setError(result.error);
       } else if (result.url) {
