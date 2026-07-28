@@ -52,10 +52,10 @@ export function Navbar({ user }: NavbarProps) {
               <Briefcase className="inline h-4 w-4 mr-1" />
               Jobs
             </Link>
-            <Link href="/store/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
-              <Store className="inline h-4 w-4 mr-1" />
-              Store
-            </Link>
+            <Link href="/store" className="text-sm text-zinc-400 transition-colors hover:text-white">
+  <Store className="inline h-4 w-4 mr-1" />
+  Stores
+</Link>
             <Link href="/opportunities" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <GraduationCap className="inline h-4 w-4 mr-1" />
               Opportunities
