@@ -1,10 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { paystackRequest } from "@/lib/paystack/client";
 import { revalidatePath } from "next/cache";
 
-const PLATFORM_FEE_PERCENT = 0.10; // 10%
+const PLATFORM_FEE_PERCENT = 0.10;
 
 export async function initializeOrder(listingId: string) {
   const supabase = await createClient();
@@ -17,7 +18,6 @@ export async function initializeOrder(listingId: string) {
     return { error: "Not authenticated" };
   }
 
-  // Get listing
   const { data: listing } = await supabase
     .from("listings")
     .select("*, seller:profiles(id, full_name, email)")
@@ -36,7 +36,6 @@ export async function initializeOrder(listingId: string) {
     return { error: "You cannot buy your own listing" };
   }
 
-  // Check seller has subaccount
   const { data: subaccount } = await supabase
     .from("paystack_subaccounts")
     .select("subaccount_code")
@@ -51,7 +50,6 @@ export async function initializeOrder(listingId: string) {
   const platformFee = Math.round(amount * PLATFORM_FEE_PERCENT * 100) / 100;
   const sellerAmount = amount - platformFee;
 
-  // Create order record
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
@@ -70,18 +68,17 @@ export async function initializeOrder(listingId: string) {
     return { error: "Failed to create order" };
   }
 
-  // Initialize Paystack transaction
   try {
     const result = await paystackRequest("/transaction/initialize", {
       method: "POST",
       body: JSON.stringify({
         email: user.email,
-        amount: Math.round(amount * 100), // kobo
+        amount: Math.round(amount * 100),
         reference: `cw_${order.id}`,
         callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/orders`,
         subaccount: subaccount.subaccount_code,
-        transaction_charge: Math.round(platformFee * 100), // platform fee in kobo
-        bearer: "account", // platform bears the charge
+        transaction_charge: Math.round(platformFee * 100),
+        bearer: "account",
         metadata: {
           order_id: order.id,
           listing_id: listingId,
@@ -95,7 +92,6 @@ export async function initializeOrder(listingId: string) {
       throw new Error(result.message);
     }
 
-    // Update order with reference
     await supabase
       .from("orders")
       .update({ paystack_reference: result.data.reference })
@@ -103,11 +99,9 @@ export async function initializeOrder(listingId: string) {
 
     return { success: true, authorizationUrl: result.data.authorization_url };
   } catch (err) {
-    // Delete the pending order
     await supabase.from("orders").delete().eq("id", order.id);
     return {
-      error:
-        err instanceof Error ? err.message : "Failed to initialize payment",
+      error: err instanceof Error ? err.message : "Failed to initialize payment",
     };
   }
 }
@@ -116,15 +110,12 @@ export async function verifyPayment(reference: string) {
   const supabase = await createClient();
 
   try {
-    const result = await paystackRequest(
-      `/transaction/verify/${reference}`
-    );
+    const result = await paystackRequest(`/transaction/verify/${reference}`);
 
     if (!result.status || result.data.status !== "success") {
       return { error: "Payment verification failed" };
     }
 
-    // Update order
     const { data: order } = await supabase
       .from("orders")
       .update({ status: "paid" })
@@ -136,7 +127,6 @@ export async function verifyPayment(reference: string) {
       return { error: "Order not found" };
     }
 
-    // For digital products, auto-complete
     const { data: listing } = await supabase
       .from("listings")
       .select("product_type")
@@ -150,8 +140,7 @@ export async function verifyPayment(reference: string) {
     return { success: true };
   } catch (err) {
     return {
-      error:
-        err instanceof Error ? err.message : "Payment verification failed",
+      error: err instanceof Error ? err.message : "Payment verification failed",
     };
   }
 }
@@ -198,6 +187,7 @@ export async function confirmDelivery(orderId: string) {
 
 export async function releaseEscrow(orderId: string) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const { data: order } = await supabase
     .from("orders")
@@ -209,15 +199,14 @@ export async function releaseEscrow(orderId: string) {
     return { error: "Order not found" };
   }
 
-  // For digital, auto-release. For physical, must be delivered.
   if (
-    order.listing.product_type === "physical" &&
+    order.listing?.product_type === "physical" &&
     order.status !== "delivered"
   ) {
     return { error: "Physical order must be delivered first" };
   }
 
-  // Update order to completed
+  // Mark order completed
   await supabase
     .from("orders")
     .update({
@@ -226,12 +215,75 @@ export async function releaseEscrow(orderId: string) {
     })
     .eq("id", orderId);
 
-  // Update listing to sold if physical
-  if (order.listing.product_type === "physical") {
+  // Mark listing sold if physical
+  if (order.listing?.product_type === "physical" && order.listing_id) {
     await supabase
       .from("listings")
       .update({ status: "sold" })
       .eq("id", order.listing_id);
+  }
+
+  // Get seller's subaccount code
+  const { data: subaccount } = await adminClient
+    .from("paystack_subaccounts")
+    .select("subaccount_code")
+    .eq("user_id", order.seller_id)
+    .single();
+
+  if (!subaccount) {
+    console.error("Seller subaccount not found for order:", orderId);
+    revalidatePath("/orders");
+    return { success: true, warning: "Order completed but payout could not be initiated" };
+  }
+
+  // Initiate transfer to seller via Paystack
+  try {
+    // First create a transfer recipient from the subaccount
+    const recipientResult = await paystackRequest("/transferrecipient", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "subaccount",
+        account_number: subaccount.subaccount_code,
+        currency: "NGN",
+      }),
+    });
+
+    if (!recipientResult.status) {
+      throw new Error(recipientResult.message ?? "Failed to create transfer recipient");
+    }
+
+    const recipientCode = recipientResult.data.recipient_code;
+    const transferAmount = Math.round(order.seller_amount * 100); // kobo
+
+    // Initiate the transfer
+    const transferResult = await paystackRequest("/transfer", {
+      method: "POST",
+      body: JSON.stringify({
+        source: "balance",
+        amount: transferAmount,
+        recipient: recipientCode,
+        reason: `CampusWhop payout for order ${orderId}`,
+        reference: `payout_${orderId}`,
+      }),
+    });
+
+    if (!transferResult.status) {
+      throw new Error(transferResult.message ?? "Transfer initiation failed");
+    }
+
+    // Save transfer code on order
+    await adminClient
+      .from("orders")
+      .update({
+        paystack_transfer_code: transferResult.data.transfer_code,
+      })
+      .eq("id", orderId);
+
+    console.log("Transfer initiated for order:", orderId, transferResult.data.transfer_code);
+  } catch (err) {
+    // Log but don't fail — order is already completed
+    // Admin can manually trigger payout from Paystack dashboard
+    console.error("Payout transfer failed for order:", orderId, err);
   }
 
   revalidatePath("/orders");
@@ -292,14 +344,14 @@ export async function getUserOrders() {
     .order("created_at", { ascending: false });
 
   const { data: selling, error: sellingError } = await supabase
-  .from("orders")
-  .select(`
-    *,
-    listing:listings(title, images, product_type),
-    buyer:profiles!orders_buyer_id_fkey(full_name, avatar_url)
-  `)
-  .eq("seller_id", user.id)
-  .order("created_at", { ascending: false });
+    .from("orders")
+    .select(`
+      *,
+      listing:listings(title, images, product_type),
+      buyer:profiles!orders_buyer_id_fkey(full_name, avatar_url)
+    `)
+    .eq("seller_id", user.id)
+    .order("created_at", { ascending: false });
 
   if (buyingError) return { error: `Buying query failed: ${buyingError.message}` };
   if (sellingError) return { error: `Selling query failed: ${sellingError.message}` };
