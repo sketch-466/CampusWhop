@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { verifyPayment, confirmDelivery, disputeOrder } from '@/lib/actions/orders'
 import { verifyStoreOrder, markStoreOrderShipped, confirmStoreDelivery } from '@/lib/actions/orders-store'
+import OrderActions from '@/components/shared/order-actions'
 
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
@@ -166,45 +167,6 @@ function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) 
 
   const storeName = order.stores?.store_name ?? null
   const storeLogo = order.stores?.logo_url ?? null
-  const storeSlug = order.stores?.slug ?? null
-
-  const showMarketplaceConfirmDelivery =
-    !isStoreOrder &&
-    role === 'buying' &&
-    order.status === 'paid' &&
-    order.listings?.product_type === 'physical'
-
-  const showDispute =
-    !isStoreOrder &&
-    role === 'buying' &&
-    order.status === 'paid'
-
-  const showMarkShipped =
-    isStoreOrder &&
-    !isDigital &&
-    role === 'selling' &&
-    order.status === 'paid'
-
-  const showStoreConfirmDelivery =
-    isStoreOrder &&
-    !isDigital &&
-    role === 'buying' &&
-    order.status === 'shipped'
-
-  const showDownloadLink =
-    isDigital &&
-    order.status === 'completed' &&
-    !!order.digital_file_url
-
-  const hasActions =
-    showMarketplaceConfirmDelivery ||
-    showDispute ||
-    showMarkShipped ||
-    showStoreConfirmDelivery ||
-    showDownloadLink ||
-    order.status === 'completed' ||
-    order.status === 'disputed' ||
-    (isStoreOrder && order.status === 'shipped' && role === 'selling')
 
   const postedDate = new Date(order.created_at).toLocaleDateString('en-NG', {
     day: 'numeric',
@@ -283,108 +245,7 @@ function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) 
         </div>
       </div>
 
-      {hasActions && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-zinc-800 px-3 py-2">
-          {showMarketplaceConfirmDelivery && (
-            <form
-              action={async () => {
-                'use server'
-                await confirmDelivery(order.id)
-              }}
-            >
-              <button
-                type="submit"
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-              >
-                ✓ Confirm Delivery
-              </button>
-            </form>
-          )}
-
-          {showDispute && (
-            <form
-              action={async () => {
-                'use server'
-                await disputeOrder(order.id, 'Buyer initiated dispute')
-              }}
-            >
-              <button
-                type="submit"
-                className="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/10"
-              >
-                Dispute
-              </button>
-            </form>
-          )}
-
-          {showMarkShipped && (
-            <form
-              action={async () => {
-                'use server'
-                await markStoreOrderShipped(order.id)
-              }}
-            >
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-              >
-                📦 Mark as Shipped
-              </button>
-            </form>
-          )}
-
-          {showStoreConfirmDelivery && (
-            <form
-              action={async () => {
-                'use server'
-                await confirmStoreDelivery(order.id)
-              }}
-            >
-              <button
-                type="submit"
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-              >
-                ✓ Confirm Delivery
-              </button>
-            </form>
-          )}
-
-          {showDownloadLink && (
-            <a
-              href={order.digital_file_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
-            >
-              ⬇ Download File
-            </a>
-          )}
-
-          {order.status === 'completed' && !showDownloadLink && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-emerald-400">✓ Completed</span>
-              {!isStoreOrder && (
-                <Link
-                  href={`/reviews/${order.id}`}
-                  className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500"
-                >
-                  Leave Review
-                </Link>
-              )}
-            </div>
-          )}
-
-          {order.status === 'disputed' && (
-            <span className="text-xs text-red-400">⚠ Under admin review</span>
-          )}
-
-          {isStoreOrder && order.status === 'shipped' && role === 'selling' && (
-            <span className="text-xs text-zinc-500">
-              Awaiting buyer confirmation...
-            </span>
-          )}
-        </div>
-      )}
+      <OrderActions order={order} role={role} />
     </div>
   )
 }
