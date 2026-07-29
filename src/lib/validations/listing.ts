@@ -7,6 +7,7 @@ export const listingSchema = z.object({
   product_type: z.enum(['physical', 'digital']),
   category: z.enum(['phones', 'laptops', 'books', 'gadgets', 'services', 'notes', 'templates', 'ebooks', 'designs', 'other']),
   delivery_note: z.string().max(500).optional(),
+  payment_type: z.enum(['escrow', 'direct']).default('escrow'),
 });
 
 export type ListingInput = z.infer<typeof listingSchema>;

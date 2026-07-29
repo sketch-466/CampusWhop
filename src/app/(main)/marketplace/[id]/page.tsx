@@ -186,7 +186,11 @@ export default async function ListingDetailPage({
               </Button>
             </Link>
           ) : (
-            <BuyButton listingId={rawListing.id} price={rawListing.price} />
+            <BuyButton
+  listingId={rawListing.id}
+  price={rawListing.price}
+  paymentType={rawListing.payment_type as "escrow" | "direct" ?? "escrow"}
+/>
           )}
         </div>
       </div>

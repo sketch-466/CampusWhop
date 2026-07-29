@@ -47,27 +47,30 @@ export default function NewListingPage() {
     trigger,
   } = useForm<ListingInput>({
     resolver: zodResolver(listingSchema),
+    defaultValues: {
+      payment_type: "escrow",
+    },
   });
 
   const watched = watch();
 
   useEffect(() => {
     async function checkSubaccount() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/login")
-        return
+        router.push("/login");
+        return;
       }
       const { data } = await supabase
         .from("paystack_subaccounts")
         .select("id")
         .eq("user_id", user.id)
-        .single()
-      setHasSubaccount(!!data)
+        .single();
+      setHasSubaccount(!!data);
     }
-    checkSubaccount()
-  }, [router])
+    checkSubaccount();
+  }, [router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -81,7 +84,7 @@ export default function NewListingPage() {
     for (const file of Array.from(files)) {
       const formData = new FormData();
       formData.append("image", file);
-     const result = await uploadListingImage(formData);
+      const result = await uploadListingImage(formData);
       if (result.error) {
         setError(result.error);
       } else if (result.url) {
@@ -97,7 +100,7 @@ export default function NewListingPage() {
 
   const nextStep = async () => {
     const fieldsToValidate: (keyof ListingInput)[][] = [
-      ["title", "description", "category", "product_type"],
+      ["title", "description", "category", "product_type", "payment_type"],
       ["price", "delivery_note"],
       [],
       [],
@@ -122,16 +125,14 @@ export default function NewListingPage() {
     setIsSubmitting(false);
   };
 
-  // Loading state while checking subaccount
   if (hasSubaccount === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
       </div>
-    )
+    );
   }
 
-  // No subaccount — block listing creation
   if (hasSubaccount === false) {
     return (
       <div className="mx-auto max-w-md px-4 py-12 text-center">
@@ -150,7 +151,7 @@ export default function NewListingPage() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   if (success) {
@@ -263,6 +264,46 @@ export default function NewListingPage() {
                 </select>
               </div>
             </div>
+
+            {/* Payment type selector */}
+            <div className="space-y-3">
+              <Label>Payment Method</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${
+                  watched.payment_type === "escrow"
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-zinc-700 bg-zinc-900/50"
+                }`}>
+                  <input
+                    type="radio"
+                    value="escrow"
+                    {...register("payment_type")}
+                    className="sr-only"
+                  />
+                  <p className="text-sm font-semibold text-white">🔒 Escrow</p>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Payment held until buyer confirms delivery. Best for sellers with stock in hand.
+                  </p>
+                </label>
+
+                <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${
+                  watched.payment_type === "direct"
+                    ? "border-amber-500 bg-amber-500/10"
+                    : "border-zinc-700 bg-zinc-900/50"
+                }`}>
+                  <input
+                    type="radio"
+                    value="direct"
+                    {...register("payment_type")}
+                    className="sr-only"
+                  />
+                  <p className="text-sm font-semibold text-white">⚡ Direct Pay</p>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Payment sent immediately upon purchase. Best for middlemen and dropshippers.
+                  </p>
+                </label>
+              </div>
+            </div>
           </>
         )}
 
@@ -358,6 +399,10 @@ export default function NewListingPage() {
               </p>
               <p className="text-zinc-400">
                 <span className="text-zinc-300">Type:</span> {watched.product_type}
+              </p>
+              <p className="text-zinc-400">
+                <span className="text-zinc-300">Payment:</span>{" "}
+                {watched.payment_type === "escrow" ? "🔒 Escrow" : "⚡ Direct Pay"}
               </p>
               <p className="text-zinc-400">
                 <span className="text-zinc-300">Images:</span> {images.length} uploaded

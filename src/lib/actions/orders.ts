@@ -19,10 +19,10 @@ export async function initializeOrder(listingId: string) {
   }
 
   const { data: listing } = await supabase
-    .from("listings")
-    .select("*, seller:profiles(id, full_name, email)")
-    .eq("id", listingId)
-    .single();
+  .from("listings")
+  .select("*, seller:profiles(id, full_name, email)")
+  .eq("id", listingId)
+  .single();
 
   if (!listing) {
     return { error: "Listing not found" };
@@ -69,41 +69,54 @@ export async function initializeOrder(listingId: string) {
   }
 
   try {
-    const result = await paystackRequest("/transaction/initialize", {
-      method: "POST",
-      body: JSON.stringify({
-        email: user.email,
-        amount: Math.round(amount * 100),
-        reference: `cw_${order.id}`,
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/orders`,
-        subaccount: subaccount.subaccount_code,
-        transaction_charge: Math.round(platformFee * 100),
-        bearer: "account",
-        metadata: {
-          order_id: order.id,
-          listing_id: listingId,
-          buyer_id: user.id,
-          seller_id: listing.seller_id,
-        },
-      }),
-    });
+  const isDirectPay = listing.payment_type === "direct";
 
-    if (!result.status) {
-      throw new Error(result.message);
-    }
+  const paystackBody: Record<string, unknown> = {
+    email: user.email,
+    amount: Math.round(amount * 100),
+    reference: `cw_${order.id}`,
+    callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/orders`,
+    metadata: {
+      order_id: order.id,
+      listing_id: listingId,
+      buyer_id: user.id,
+      seller_id: listing.seller_id,
+      payment_type: listing.payment_type,
+    },
+  };
 
-    await supabase
-      .from("orders")
-      .update({ paystack_reference: result.data.reference })
-      .eq("id", order.id);
-
-    return { success: true, authorizationUrl: result.data.authorization_url };
-  } catch (err) {
-    await supabase.from("orders").delete().eq("id", order.id);
-    return {
-      error: err instanceof Error ? err.message : "Failed to initialize payment",
-    };
+  if (isDirectPay) {
+    // Direct pay — full amount goes to seller subaccount immediately
+    paystackBody.subaccount = subaccount.subaccount_code;
+    paystackBody.bearer = "subaccount"; // seller bears Paystack fees
+  } else {
+    // Escrow — platform takes fee, seller gets remainder after delivery
+    paystackBody.subaccount = subaccount.subaccount_code;
+    paystackBody.transaction_charge = Math.round(platformFee * 100);
+    paystackBody.bearer = "account";
   }
+
+  const result = await paystackRequest("/transaction/initialize", {
+    method: "POST",
+    body: JSON.stringify(paystackBody),
+  });
+
+  if (!result.status) {
+    throw new Error(result.message);
+  }
+
+  await supabase
+    .from("orders")
+    .update({ paystack_reference: result.data.reference })
+    .eq("id", order.id);
+
+  return { success: true, authorizationUrl: result.data.authorization_url };
+} catch (err) {
+  await supabase.from("orders").delete().eq("id", order.id);
+  return {
+    error: err instanceof Error ? err.message : "Failed to initialize payment",
+  };
+}
 }
 
 export async function verifyPayment(reference: string) {

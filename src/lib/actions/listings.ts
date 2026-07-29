@@ -37,20 +37,21 @@ export async function createListing(data: ListingInput, images: string[]) {
   }
 
   const { data: listing, error } = await supabase
-    .from("listings")
-    .insert({
-      seller_id: user.id,
-      title: validated.data.title,
-      description: validated.data.description,
-      price: validated.data.price,
-      product_type: validated.data.product_type,
-      category: validated.data.category,
-      delivery_note: validated.data.delivery_note || null,
-      images,
-      status: "pending",
-    })
-    .select()
-    .single();
+  .from("listings")
+  .insert({
+    seller_id: user.id,
+    title: validated.data.title,
+    description: validated.data.description,
+    price: validated.data.price,
+    product_type: validated.data.product_type,
+    category: validated.data.category,
+    delivery_note: validated.data.delivery_note || null,
+    payment_type: validated.data.payment_type ?? "escrow",
+    images,
+    status: "pending",
+  })
+  .select()
+  .single();
 
   if (error) {
     return { error: "Failed to create listing" };
