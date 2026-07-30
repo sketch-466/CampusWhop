@@ -6,8 +6,8 @@ import { signOut } from '@/lib/actions/auth'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
-  LayoutDashboard, Shield, CreditCard, Briefcase, Home, Store, GraduationCap,
-  BarChart2,
+  LayoutDashboard, Shield, CreditCard, Briefcase, Store, GraduationCap,
+  BarChart2, Zap,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -42,20 +42,16 @@ export function Navbar({ user }: NavbarProps) {
             </Link>
             <Link href="/marketplace" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <ShoppingBag className="inline h-4 w-4 mr-1" />
-              Marketplace
-            </Link>
-            <Link href="/housing" className="text-sm text-zinc-400 transition-colors hover:text-white">
-              <Home className="inline h-4 w-4 mr-1" />
-              Housing
-            </Link>
-            <Link href="/jobs" className="text-sm text-zinc-400 transition-colors hover:text-white">
-              <Briefcase className="inline h-4 w-4 mr-1" />
-              Jobs
+              Products
             </Link>
             <Link href="/store" className="text-sm text-zinc-400 transition-colors hover:text-white">
-  <Store className="inline h-4 w-4 mr-1" />
-  Stores
-</Link>
+              <Store className="inline h-4 w-4 mr-1" />
+              Stores
+            </Link>
+            <Link href="/gigs" className="text-sm text-zinc-400 transition-colors hover:text-white">
+              <Zap className="inline h-4 w-4 mr-1" />
+              Gigs
+            </Link>
             <Link href="/opportunities" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <GraduationCap className="inline h-4 w-4 mr-1" />
               Opportunities
@@ -87,25 +83,25 @@ export function Navbar({ user }: NavbarProps) {
 
                   <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <User className="h-4 w-4" />
-                    Profile
+                    My Profile
                   </Link>
 
                   {/* Mobile-only nav links */}
                   <Link href="/marketplace" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <ShoppingBag className="h-4 w-4" />
-                    Marketplace
+                    Products
                   </Link>
-                  <Link href="/housing" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
-                    <Home className="h-4 w-4" />
-                    Housing
-                  </Link>
-                  <Link href="/jobs" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
-                    <Briefcase className="h-4 w-4" />
-                    Jobs
-                  </Link>
-                  <Link href="/store/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
+                  <Link href="/store" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <Store className="h-4 w-4" />
-                    My Store
+                    Stores
+                  </Link>
+                  <Link href="/gigs" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
+                    <Zap className="h-4 w-4" />
+                    Gigs
+                  </Link>
+                  <Link href="/opportunities" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
+                    <GraduationCap className="h-4 w-4" />
+                    Opportunities
                   </Link>
 
                   <div className="my-1 border-t border-zinc-800" />
@@ -126,22 +122,17 @@ export function Navbar({ user }: NavbarProps) {
                     <ShoppingBag className="h-4 w-4" />
                     My Listings
                   </Link>
-                  <Link href="/housing/my-listings" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
-                    <Home className="h-4 w-4" />
-                    My Housing Posts
+                  <Link href="/gigs/my-posts" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <Zap className="h-4 w-4" />
+                    My Gigs
                   </Link>
-                  <Link href="/jobs/applications" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
-                    <Briefcase className="h-4 w-4" />
-                    My Applications
-                  </Link>
-                  <Link href="/jobs/my-posts" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
-                    <Briefcase className="h-4 w-4" />
-                    My Job Posts
+                  <Link href="/opportunities/my-posts" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <GraduationCap className="h-4 w-4" />
+                    My Opportunities
                   </Link>
 
                   <div className="my-1 border-t border-zinc-800" />
 
-                  {/* Analytics links */}
                   <Link href="/profile/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <BarChart2 className="h-4 w-4" />
                     My Activity
