@@ -34,6 +34,10 @@ export default async function EditProfilePage() {
         twitter_url: profile.twitter_url,
         linkedin_url: profile.linkedin_url,
         email: user.email ?? "",
+        tagline: profile.tagline,
+        creator_type: profile.creator_type,
+        skills: profile.skills,
+        portfolio_url: profile.portfolio_url,
       }}
     />
   );

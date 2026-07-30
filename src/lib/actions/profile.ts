@@ -30,6 +30,13 @@ export async function updateProfile(formData: ProfileInput) {
       whatsapp_number: validated.data.whatsapp_number || null,
       twitter_url: validated.data.twitter_url || null,
       linkedin_url: validated.data.linkedin_url || null,
+      tagline: validated.data.tagline || null,
+      creator_type: validated.data.creator_type || null,
+      skills:
+        validated.data.skills && validated.data.skills.length > 0
+          ? validated.data.skills
+          : null,
+      portfolio_url: validated.data.portfolio_url || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", user.id);
@@ -40,6 +47,7 @@ export async function updateProfile(formData: ProfileInput) {
 
   revalidatePath("/dashboard");
   revalidatePath("/profile");
+  revalidatePath("/creators");
   return { success: true };
 }
 
@@ -70,19 +78,16 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "Not authenticated" };
   }
 
-  // Get existing avatar URL to delete from B2 after upload
   const { data: profile } = await supabase
     .from("profiles")
     .select("avatar_url")
     .eq("id", user.id)
     .single();
 
-  // Convert file to buffer
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
   const fileName = `${user.id}-${generateFileName(file.name)}`;
 
-  // Upload to B2
   let publicUrl: string;
   try {
     publicUrl = await uploadToB2(buffer, fileName, "avatars", file.type);
@@ -90,7 +95,6 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "Failed to upload avatar" };
   }
 
-  // Update profile with new URL
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
@@ -103,7 +107,6 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "Failed to update profile with avatar" };
   }
 
-  // Delete old avatar from B2 if it existed and was a B2 URL
   if (profile?.avatar_url && profile.avatar_url.includes("backblazeb2.com")) {
     await deleteFromB2(profile.avatar_url);
   }
