@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Briefcase, Store, GraduationCap,
-  BarChart2, Zap,
+  BarChart2, Zap, Users,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -47,6 +47,10 @@ export function Navbar({ user }: NavbarProps) {
             <Link href="/store" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <Store className="inline h-4 w-4 mr-1" />
               Stores
+            </Link>
+            <Link href="/creators" className="text-sm text-zinc-400 transition-colors hover:text-white">
+              <Users className="inline h-4 w-4 mr-1" />
+              Creators
             </Link>
             <Link href="/gigs" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <Zap className="inline h-4 w-4 mr-1" />
@@ -94,6 +98,10 @@ export function Navbar({ user }: NavbarProps) {
                   <Link href="/store" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <Store className="h-4 w-4" />
                     Stores
+                  </Link>
+                  <Link href="/creators" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
+                    <Users className="h-4 w-4" />
+                    Creators
                   </Link>
                   <Link href="/gigs" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <Zap className="h-4 w-4" />
@@ -155,7 +163,10 @@ export function Navbar({ user }: NavbarProps) {
                     Settings
                   </Link>
 
-                  <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800" onClick={() => { setDropdownOpen(false); signOut() }}>
+                  <button
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-zinc-800"
+                    onClick={() => { setDropdownOpen(false); signOut() }}
+                  >
                     <LogOut className="h-4 w-4" />
                     Sign Out
                   </button>
