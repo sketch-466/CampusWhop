@@ -6,7 +6,7 @@ import { signOut } from '@/lib/actions/auth'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
-  LayoutDashboard, Shield, CreditCard, Briefcase, Store, GraduationCap,
+  LayoutDashboard, Shield, CreditCard, Store, GraduationCap,
   BarChart2, Zap, Users,
 } from 'lucide-react'
 
@@ -137,6 +137,10 @@ export function Navbar({ user }: NavbarProps) {
                   <Link href="/opportunities/my-posts" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <GraduationCap className="h-4 w-4" />
                     My Opportunities
+                  </Link>
+                  <Link href="/subscriptions" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <Zap className="h-4 w-4" />
+                    Subscriptions
                   </Link>
 
                   <div className="my-1 border-t border-zinc-800" />

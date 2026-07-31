@@ -69,7 +69,6 @@ async function processWebhookEvent(event: {
           .update({
             status: "completed",
             completed_at: new Date().toISOString(),
-            // Copy file URL from listing into order so buyer can download
             digital_file_url: listing.digital_file_url ?? null,
           })
           .eq("id", order.id);
@@ -85,7 +84,6 @@ async function processWebhookEvent(event: {
         .single();
 
       if (product?.product_type === "digital") {
-        // Complete immediately and copy file URL
         await supabase
           .from("orders")
           .update({
@@ -99,7 +97,6 @@ async function processWebhookEvent(event: {
           product_id: order.store_product_id,
         });
       } else {
-        // Physical — decrement stock + increment units_sold
         if (
           product?.stock_quantity !== null &&
           product?.stock_quantity !== undefined
@@ -136,5 +133,70 @@ async function processWebhookEvent(event: {
       .from("orders")
       .update({ status: "disputed" })
       .eq("paystack_transfer_code", transferCode);
+  }
+
+  if (event.event === "subscription.create") {
+    const sub = event.data as any;
+    const planCode = sub.plan?.plan_code;
+    const subscriptionCode = sub.subscription_code;
+    const emailToken = sub.email_token;
+    const customerEmail = sub.customer?.email;
+
+    const { data: plan } = await supabase
+      .from("subscription_plans")
+      .select("id, creator_id")
+      .eq("paystack_plan_code", planCode)
+      .single();
+
+    if (!plan) return;
+
+    const { data: subscriber } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", customerEmail)
+      .single();
+
+    if (!subscriber) return;
+
+    const now = new Date();
+    const nextMonth = new Date(now);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    await supabase.from("subscriptions").upsert(
+      {
+        plan_id: plan.id,
+        subscriber_id: subscriber.id,
+        creator_id: plan.creator_id,
+        paystack_subscription_code: subscriptionCode,
+        paystack_email_token: emailToken,
+        status: "active",
+        current_period_start: now.toISOString(),
+        current_period_end: nextMonth.toISOString(),
+        updated_at: now.toISOString(),
+      },
+      { onConflict: "paystack_subscription_code" }
+    );
+  }
+
+  if (event.event === "invoice.payment_failed") {
+    const sub = event.data as any;
+    const subscriptionCode = sub.subscription?.subscription_code;
+    if (!subscriptionCode) return;
+
+    await supabase
+      .from("subscriptions")
+      .update({ status: "expired", updated_at: new Date().toISOString() })
+      .eq("paystack_subscription_code", subscriptionCode);
+  }
+
+  if (event.event === "subscription.disable") {
+    const sub = event.data as any;
+    const subscriptionCode = sub.subscription_code;
+    if (!subscriptionCode) return;
+
+    await supabase
+      .from("subscriptions")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("paystack_subscription_code", subscriptionCode);
   }
 }

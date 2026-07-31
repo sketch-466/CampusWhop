@@ -11,7 +11,7 @@ import {
   Linkedin,
   MessageCircle,
   Phone,
-  Star,
+  CheckCircle2,
 } from "lucide-react";
 import {
   CREATOR_TYPE_LABELS,
@@ -20,6 +20,7 @@ import {
 import { getReviewsForUser } from "@/lib/actions/reviews";
 import { StarRating } from "@/components/shared/star-rating";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
+import { SubscribeButton } from "@/components/shared/subscribe-button";
 
 export default async function CreatorProfilePage({
   params,
@@ -39,7 +40,6 @@ export default async function CreatorProfilePage({
 
   if (!profile || !profile.creator_type) notFound();
 
-  // Fetch their active listings
   const { data: listings } = await supabase
     .from("listings")
     .select("id, title, price, images, product_type")
@@ -49,7 +49,6 @@ export default async function CreatorProfilePage({
     .order("created_at", { ascending: false })
     .limit(6);
 
-  // Fetch their store if any
   const { data: store } = await supabase
     .from("stores")
     .select("slug, store_name, logo_url, tagline")
@@ -57,6 +56,13 @@ export default async function CreatorProfilePage({
     .eq("status", "active")
     .eq("is_deleted", false)
     .single();
+
+  const { data: plans } = await supabase
+    .from("subscription_plans")
+    .select("id, title, price, perks, description")
+    .eq("creator_id", id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: true });
 
   const reviews = await getReviewsForUser(id);
 
@@ -120,21 +126,18 @@ export default async function CreatorProfilePage({
           </div>
         </div>
 
-        {/* Tagline */}
         {profile.tagline && (
           <p className="mt-5 text-base font-medium text-zinc-200">
             &ldquo;{profile.tagline}&rdquo;
           </p>
         )}
 
-        {/* Bio */}
         {profile.bio && (
           <p className="mt-3 text-sm leading-relaxed text-zinc-400">
             {profile.bio}
           </p>
         )}
 
-        {/* Skills */}
         {skills.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {skills.map((skill) => (
@@ -148,7 +151,6 @@ export default async function CreatorProfilePage({
           </div>
         )}
 
-        {/* Links */}
         <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-zinc-800 pt-5">
           {profile.whatsapp_number && (
             <a
@@ -202,6 +204,44 @@ export default async function CreatorProfilePage({
           )}
         </div>
       </div>
+
+      {/* ── SUBSCRIPTION PLANS ── */}
+      {plans && plans.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold text-white">Subscription Plans</h2>
+          <div className="space-y-3">
+            {plans.map((plan: any) => (
+              <div
+                key={plan.id}
+                className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{plan.title}</p>
+                    {plan.description && (
+                      <p className="mt-0.5 text-xs text-zinc-400">{plan.description}</p>
+                    )}
+                  </div>
+                  <p className="shrink-0 text-sm font-bold text-emerald-400">
+                    ₦{plan.price?.toLocaleString()}/mo
+                  </p>
+                </div>
+                {plan.perks?.length > 0 && (
+                  <ul className="space-y-1">
+                    {plan.perks.map((perk: string) => (
+                      <li key={perk} className="flex items-center gap-1.5 text-xs text-zinc-400">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        {perk}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <SubscribeButton planId={plan.id} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── STORE ── */}
       {store && (
