@@ -55,11 +55,11 @@ async function processWebhookEvent(event: {
 
     if (!order) return;
 
-    // Marketplace order — auto-complete digital products
+    // ── MARKETPLACE ORDER ──
     if (order.listing_id && !order.store_product_id) {
       const { data: listing } = await supabase
         .from("listings")
-        .select("product_type")
+        .select("product_type, digital_file_url")
         .eq("id", order.listing_id)
         .single();
 
@@ -69,30 +69,37 @@ async function processWebhookEvent(event: {
           .update({
             status: "completed",
             completed_at: new Date().toISOString(),
+            // Copy file URL from listing into order so buyer can download
+            digital_file_url: listing.digital_file_url ?? null,
           })
           .eq("id", order.id);
       }
     }
 
-    // Store order
+    // ── STORE ORDER ──
     if (order.store_product_id) {
-      if (order.digital_file_url) {
-        // Digital — complete immediately
+      const { data: product } = await supabase
+        .from("store_products")
+        .select("product_type, digital_file_url, stock_quantity")
+        .eq("id", order.store_product_id)
+        .single();
+
+      if (product?.product_type === "digital") {
+        // Complete immediately and copy file URL
         await supabase
           .from("orders")
           .update({
             status: "completed",
             completed_at: new Date().toISOString(),
+            digital_file_url: product.digital_file_url ?? null,
           })
           .eq("id", order.id);
+
+        await supabase.rpc("increment_store_units_sold", {
+          product_id: order.store_product_id,
+        });
       } else {
         // Physical — decrement stock + increment units_sold
-        const { data: product } = await supabase
-          .from("store_products")
-          .select("stock_quantity")
-          .eq("id", order.store_product_id)
-          .single();
-
         if (
           product?.stock_quantity !== null &&
           product?.stock_quantity !== undefined

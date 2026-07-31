@@ -18,7 +18,7 @@ export default function OrderActions({
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const isStoreOrder = !!order.store_product_id;
-  const isDigital = isStoreOrder && !!order.digital_file_url;
+  const isDigital = !!order.digital_file_url;
 
   const showMarketplaceConfirmDelivery =
     !isStoreOrder &&
@@ -44,9 +44,9 @@ export default function OrderActions({
     order.status === "shipped";
 
   const showDownloadLink =
-    isDigital &&
-    order.status === "completed" &&
-    !!order.digital_file_url;
+  isDigital &&
+  role === "buying" &&
+  order.status === "completed";
 
   const hasActions =
     showMarketplaceConfirmDelivery ||
@@ -123,15 +123,13 @@ export default function OrderActions({
       )}
 
       {showDownloadLink && (
-        <a
-          href={order.digital_file_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
-        >
-          ⬇ Download File
-        </a>
-      )}
+  <a
+    href={`/api/download/${order.id}`}
+    className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
+  >
+    ⬇ Download File
+  </a>
+)}
 
       {order.status === "completed" && !showDownloadLink && (
         <div className="flex items-center gap-2">
