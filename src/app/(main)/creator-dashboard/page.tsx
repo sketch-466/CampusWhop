@@ -121,7 +121,7 @@ export default async function CreatorDashboardPage() {
   { label: 'Subscriptions', href: '/admin/subscriptions' },
   { label: 'Opportunities', href: '/admin/opportunities' },
   { label: 'Analytics', href: '/admin/analytics' },
-]
+]  
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 space-y-4">
