@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Phone,
   CheckCircle2,
+  Clock,
 } from "lucide-react";
 import {
   CREATOR_TYPE_LABELS,
@@ -21,6 +22,7 @@ import { getReviewsForUser } from "@/lib/actions/reviews";
 import { StarRating } from "@/components/shared/star-rating";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
 import { SubscribeButton } from "@/components/shared/subscribe-button";
+import { BookButton } from "@/components/shared/book-button";
 
 export default async function CreatorProfilePage({
   params,
@@ -64,8 +66,16 @@ export default async function CreatorProfilePage({
     .eq("is_active", true)
     .order("created_at", { ascending: true });
 
-  const reviews = await getReviewsForUser(id);
+  const { data: services } = await supabase
+    .from("booking_services")
+    .select(
+      "id, title, description, duration_minutes, price, booking_type, booking_slots(id, starts_at, ends_at, is_booked)"
+    )
+    .eq("creator_id", id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: true });
 
+  const reviews = await getReviewsForUser(id);
   const skills: string[] = Array.isArray(profile.skills) ? profile.skills : [];
 
   const initials = profile.full_name
@@ -95,7 +105,10 @@ export default async function CreatorProfilePage({
         <div className="flex items-start gap-4">
           <Avatar className="h-20 w-20 shrink-0">
             {profile.avatar_url && (
-              <AvatarImage src={profile.avatar_url} alt={profile.full_name || ""} />
+              <AvatarImage
+                src={profile.avatar_url}
+                alt={profile.full_name || ""}
+              />
             )}
             <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
           </Avatar>
@@ -205,10 +218,59 @@ export default async function CreatorProfilePage({
         </div>
       </div>
 
+      {/* ── BOOKING SERVICES ── */}
+      {services && services.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold text-white">
+            Book a Session
+          </h2>
+          <div className="space-y-3">
+            {services.map((service: any) => (
+              <div
+                key={service.id}
+                className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{service.title}</p>
+                    {service.description && (
+                      <p className="mt-0.5 text-xs text-zinc-400">
+                        {service.description}
+                      </p>
+                    )}
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <span className="flex items-center gap-1 text-xs text-zinc-500">
+                        <Clock className="h-3 w-3" />
+                        {service.duration_minutes} min
+                      </span>
+                      <span className="text-xs text-zinc-500">
+                        {service.booking_type === "slot"
+                          ? "Fixed slots"
+                          : "Request-based"}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="shrink-0 text-sm font-bold text-emerald-400">
+                    ₦{service.price?.toLocaleString()}
+                  </p>
+                </div>
+                <BookButton
+                  serviceId={service.id}
+                  bookingType={service.booking_type}
+                  slots={service.booking_slots}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── SUBSCRIPTION PLANS ── */}
       {plans && plans.length > 0 && (
         <div className="mt-6">
-          <h2 className="mb-3 text-lg font-semibold text-white">Subscription Plans</h2>
+          <h2 className="mb-3 text-lg font-semibold text-white">
+            Subscription Plans
+          </h2>
           <div className="space-y-3">
             {plans.map((plan: any) => (
               <div
@@ -219,7 +281,9 @@ export default async function CreatorProfilePage({
                   <div>
                     <p className="font-semibold text-white">{plan.title}</p>
                     {plan.description && (
-                      <p className="mt-0.5 text-xs text-zinc-400">{plan.description}</p>
+                      <p className="mt-0.5 text-xs text-zinc-400">
+                        {plan.description}
+                      </p>
                     )}
                   </div>
                   <p className="shrink-0 text-sm font-bold text-emerald-400">
@@ -229,7 +293,10 @@ export default async function CreatorProfilePage({
                 {plan.perks?.length > 0 && (
                   <ul className="space-y-1">
                     {plan.perks.map((perk: string) => (
-                      <li key={perk} className="flex items-center gap-1.5 text-xs text-zinc-400">
+                      <li
+                        key={perk}
+                        className="flex items-center gap-1.5 text-xs text-zinc-400"
+                      >
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                         {perk}
                       </li>

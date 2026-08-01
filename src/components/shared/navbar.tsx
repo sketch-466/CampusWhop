@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Store, GraduationCap,
-  BarChart2, Zap, Users,
+  BarChart2, Zap, Users, Calendar,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -34,7 +34,6 @@ export function Navbar({ user }: NavbarProps) {
         </Link>
 
         <div className="flex items-center gap-4">
-          {/* Desktop Nav Links */}
           <div className="hidden items-center gap-3 sm:flex">
             <Link href="/dashboard" className="text-sm text-zinc-400 transition-colors hover:text-white">
               <LayoutDashboard className="inline h-4 w-4 mr-1" />
@@ -62,7 +61,6 @@ export function Navbar({ user }: NavbarProps) {
             </Link>
           </div>
 
-          {/* User Dropdown */}
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -90,7 +88,6 @@ export function Navbar({ user }: NavbarProps) {
                     My Profile
                   </Link>
 
-                  {/* Mobile-only nav links */}
                   <Link href="/marketplace" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <ShoppingBag className="h-4 w-4" />
                     Products
@@ -122,6 +119,14 @@ export function Navbar({ user }: NavbarProps) {
                     <ShoppingBag className="h-4 w-4" />
                     My Orders
                   </Link>
+                  <Link href="/bookings" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <Calendar className="h-4 w-4" />
+                    My Bookings
+                  </Link>
+                  <Link href="/subscriptions" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                    <Zap className="h-4 w-4" />
+                    Subscriptions
+                  </Link>
                   <Link href="/store/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <Store className="h-4 w-4" />
                     My Store
@@ -137,10 +142,6 @@ export function Navbar({ user }: NavbarProps) {
                   <Link href="/opportunities/my-posts" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
                     <GraduationCap className="h-4 w-4" />
                     My Opportunities
-                  </Link>
-                  <Link href="/subscriptions" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
-                    <Zap className="h-4 w-4" />
-                    Subscriptions
                   </Link>
 
                   <div className="my-1 border-t border-zinc-800" />
