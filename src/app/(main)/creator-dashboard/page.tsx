@@ -113,13 +113,15 @@ export default async function CreatorDashboardPage() {
   const creatorLabel = CREATOR_TYPE_LABELS[profile.creator_type as CreatorType]
 
   const adminLinks = [
-    { label: 'Listings', href: '/admin/listings' },
-    { label: 'Gigs', href: '/admin/jobs' },
-    { label: 'Stores', href: '/admin/stores' },
-    { label: 'Disputes', href: '/admin/disputes' },
-    { label: 'Opportunities', href: '/admin/opportunities' },
-    { label: 'Analytics', href: '/admin/analytics' },
-  ]
+  { label: 'Listings', href: '/admin/listings' },
+  { label: 'Gigs', href: '/admin/jobs' },
+  { label: 'Stores', href: '/admin/stores' },
+  { label: 'Disputes', href: '/admin/disputes' },
+  { label: 'Bookings', href: '/admin/bookings' },
+  { label: 'Subscriptions', href: '/admin/subscriptions' },
+  { label: 'Opportunities', href: '/admin/opportunities' },
+  { label: 'Analytics', href: '/admin/analytics' },
+]
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 space-y-4">
