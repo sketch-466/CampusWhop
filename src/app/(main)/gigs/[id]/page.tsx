@@ -9,31 +9,31 @@ import { createClient } from '@/lib/supabase/server'
 import { JobApplicationForm } from '@/components/shared/job-application-form'
 import ViewTracker from '@/components/shared/view-tracker'
 
-interface JobDetailPageProps {
+interface GigDetailPageProps {
   params: Promise<{ id: string }>
 }
 
-export default async function JobDetailPage({ params }: JobDetailPageProps) {
-  const { id } = await params
-  const { job, error } = await getJobById(id)
+const gigTypeLabels: Record<string, string> = {
+  job: 'Part-time',
+  internship: 'Internship',
+  gig: 'One-time Gig',
+  ambassador: 'Ambassador',
+  remote: 'Remote',
+  freelance: 'Freelance',
+}
 
-  if (error || !job) notFound()
+export default async function GigDetailPage({ params }: GigDetailPageProps) {
+  const { id } = await params
+  const { job: gig, error } = await getJobById(id)
+
+  if (error || !gig) notFound()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isOwner = user?.id === job.poster_id
+  const isOwner = user?.id === gig.poster_id
   const { hasApplied } = await hasAppliedToJob(id)
-  const isExpired = job.deadline && new Date(job.deadline) < new Date()
-
-  const gigTypeLabels: Record<string, string> = {
-    job: 'Part-time',
-    internship: 'Internship',
-    gig: 'One-time Gig',
-    ambassador: 'Ambassador',
-    remote: 'Remote',
-    freelance: 'Freelance',
-  }
+  const isExpired = gig.deadline && new Date(gig.deadline) < new Date()
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
@@ -48,73 +48,81 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       </Link>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 space-y-6">
+        {/* Header */}
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-3">
-            <Badge variant="default">{gigTypeLabels[job.job_type] || job.job_type}</Badge>
-            {job.is_remote && <Badge variant="outline">Remote</Badge>}
-            {job.is_paid && <Badge variant="success">Paid</Badge>}
+            <Badge variant="default">{gigTypeLabels[gig.job_type] || gig.job_type}</Badge>
+            {gig.is_remote && <Badge variant="outline">Remote</Badge>}
+            {gig.is_paid && <Badge variant="success">Paid</Badge>}
             {isExpired && <Badge variant="destructive">Expired</Badge>}
           </div>
-          <h1 className="text-2xl font-bold text-white">{job.title}</h1>
-          <p className="text-lg text-emerald-400 mt-1">{job.company}</p>
+          <h1 className="text-2xl font-bold text-white">{gig.title}</h1>
+          <p className="text-lg text-emerald-400 mt-1">{gig.company}</p>
         </div>
 
+        {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
           <span className="flex items-center gap-1">
             <MapPin className="h-4 w-4" />
-            {job.location}
+            {gig.location}
           </span>
-          {job.pay_range && (
+          {gig.pay_range && (
             <span className="flex items-center gap-1 text-emerald-400">
               <Banknote className="h-4 w-4" />
-              {job.pay_range}
+              {gig.pay_range}
             </span>
           )}
-          {job.deadline && (
+          {gig.deadline && (
             <span className={`flex items-center gap-1 ${isExpired ? 'text-red-400' : ''}`}>
               <Clock className="h-4 w-4" />
-              Deadline: {new Date(job.deadline).toLocaleDateString()}
+              Deadline: {new Date(gig.deadline).toLocaleDateString()}
             </span>
           )}
-          <span className="text-zinc-500">{job.views_count} views</span>
+          <span className="text-zinc-500">{gig.views_count} views</span>
         </div>
 
+        {/* Poster */}
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium text-white">
-              {job.poster?.full_name?.[0]?.toUpperCase() || 'U'}
+              {gig.poster?.full_name?.[0]?.toUpperCase() || 'U'}
             </div>
             <div>
-              <p className="font-medium text-white">{job.poster?.full_name || 'Unknown'}</p>
+              <p className="font-medium text-white">
+                {gig.poster?.full_name || 'Unknown'}
+              </p>
               <ReputationBadge
-                score={job.poster?.reputation_score || 0}
-                totalReviews={job.poster?.total_reviews || 0}
+                score={gig.poster?.reputation_score || 0}
+                totalReviews={gig.poster?.total_reviews || 0}
               />
             </div>
           </div>
         </div>
 
+        {/* Description */}
         <div>
           <h3 className="font-semibold text-white mb-2">Description</h3>
           <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-            {job.description}
+            {gig.description}
           </p>
         </div>
 
-        {job.requirements && (
+        {/* Requirements */}
+        {gig.requirements && (
           <div>
             <h3 className="font-semibold text-white mb-2">Requirements</h3>
             <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-              {job.requirements}
+              {gig.requirements}
             </p>
           </div>
         )}
 
+        {/* Apply Section */}
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
           {isOwner ? (
             <div className="text-center">
               <p className="text-sm text-yellow-400">This is your gig post.</p>
-              {job.apply_method === 'internal' && (
+              {gig.apply_method === 'internal' && (
                 <Link href={`/gigs/${id}/applicants`}>
                   <Button variant="outline" size="sm" className="mt-2">
                     View Applicants
@@ -126,35 +134,46 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             <div className="text-center">
               <p className="text-sm text-zinc-400">Sign in to apply for this gig.</p>
               <Link href="/login">
-                <Button className="mt-2 bg-emerald-500 hover:bg-emerald-600">Sign In</Button>
+                <Button className="mt-2 bg-emerald-500 hover:bg-emerald-600">
+                  Sign In
+                </Button>
               </Link>
             </div>
           ) : hasApplied ? (
             <div className="rounded-lg border border-emerald-800 bg-emerald-900/20 p-4 text-center">
               <p className="text-sm text-emerald-400">✓ You have applied for this gig</p>
             </div>
-          ) : job.apply_method === 'external' ? (
+          ) : gig.apply_method === 'external' ? (
             <div className="space-y-3">
               <p className="text-sm font-medium text-white">Apply via:</p>
               <div className="flex flex-wrap gap-2">
-                {job.apply_url && (
-                  <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+                {gig.apply_url && (
+                  <a
+                    href={gig.apply_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+                  >
                     <ExternalLink className="h-4 w-4" />
                     Apply Online
                   </a>
                 )}
-                {job.apply_email && (
-                  <a href={`mailto:${job.apply_email}`}
-                    className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800">
+                {gig.apply_email && (
+                  <a
+                    href={`mailto:${gig.apply_email}`}
+                    className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+                  >
                     <Mail className="h-4 w-4" />
                     Apply via Email
                   </a>
                 )}
-                {job.apply_whatsapp && (
-                  <a href={`https://wa.me/${job.apply_whatsapp.replace(/\D/g, '')}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-800 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-900/20">
+                {gig.apply_whatsapp && (
+                  <a
+                    href={`https://wa.me/${gig.apply_whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-800 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-900/20"
+                  >
                     <MessageCircle className="h-4 w-4" />
                     Apply via WhatsApp
                   </a>
