@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { getUserApplications } from '@/lib/actions/jobs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Briefcase } from 'lucide-react'
+import { ArrowLeft, Zap } from 'lucide-react'
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'destructive'> = {
   pending: 'warning',
@@ -12,32 +12,30 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'destruct
   rejected: 'destructive',
 }
 
-export default async function MyApplicationsPage() {
+export default async function MyGigApplicationsPage() {
   const { applications, error } = await getUserApplications()
 
-  if (error) {
-    redirect('/jobs')
-  }
+  if (error) redirect('/gigs')
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <Link
-        href="/jobs"
+        href="/gigs"
         className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Jobs
+        Back to Gigs
       </Link>
 
       <h1 className="text-2xl font-bold text-white mb-6">My Applications</h1>
 
       {!applications || applications.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 text-center">
-          <Briefcase className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
-          <p className="text-zinc-400">You haven't applied to any jobs yet.</p>
-          <Link href="/jobs">
+          <Zap className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+          <p className="text-zinc-400">You haven&apos;t applied to any gigs yet.</p>
+          <Link href="/gigs">
             <Button className="mt-4 bg-emerald-500 hover:bg-emerald-600">
-              Browse Jobs
+              Browse Gigs
             </Button>
           </Link>
         </div>
@@ -49,10 +47,10 @@ export default async function MyApplicationsPage() {
               className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4"
             >
               <div className="flex items-start justify-between">
-                <div>
-                  <Link href={`/jobs/${app.job_id}`}>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/gigs/${app.job_id}`}>
                     <h3 className="font-semibold text-white hover:text-emerald-400 transition-colors">
-                      {app.job?.title || 'Unknown Job'}
+                      {app.job?.title || 'Unknown Gig'}
                     </h3>
                   </Link>
                   <p className="text-sm text-zinc-400">{app.job?.company || ''}</p>

@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ReputationBadge } from './reputation-badge'
-import { MapPin, Clock, DollarSign } from 'lucide-react'
+import { MapPin, Clock, Banknote } from 'lucide-react'
 
-interface JobCardProps {
-  job: {
+interface GigCardProps {
+  gig: {
     id: string
     title: string
     company: string
@@ -23,17 +23,17 @@ interface JobCardProps {
   }
 }
 
-export function JobCard({ job }: JobCardProps) {
-  const jobTypeLabels: Record<string, string> = {
-    job: 'Full-time',
+export function GigCard({ gig }: GigCardProps) {
+  const gigTypeLabels: Record<string, string> = {
+    job: 'Part-time',
     internship: 'Internship',
-    gig: 'Gig',
+    gig: 'One-time Gig',
     ambassador: 'Ambassador',
     remote: 'Remote',
     freelance: 'Freelance',
   }
 
-  const jobTypeColors: Record<string, 'default' | 'success' | 'warning' | 'outline'> = {
+  const gigTypeColors: Record<string, 'default' | 'success' | 'warning' | 'outline'> = {
     job: 'default',
     internship: 'success',
     gig: 'warning',
@@ -42,60 +42,62 @@ export function JobCard({ job }: JobCardProps) {
     freelance: 'outline',
   }
 
-  const isExpired = job.deadline && new Date(job.deadline) < new Date()
+  const isExpired = gig.deadline && new Date(gig.deadline) < new Date()
 
   return (
     <Link
-      href={`/jobs/${job.id}`}
+      href={`/gigs/${gig.id}`}
       className="group block rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900/50"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={jobTypeColors[job.job_type] || 'default'}>
-              {jobTypeLabels[job.job_type] || job.job_type}
+            <Badge variant={gigTypeColors[gig.job_type] || 'default'}>
+              {gigTypeLabels[gig.job_type] || gig.job_type}
             </Badge>
-            {job.is_remote && (
+            {gig.is_remote && (
               <Badge variant="outline">Remote</Badge>
             )}
-            {job.is_paid && (
+            {gig.is_paid && (
               <Badge variant="success">Paid</Badge>
             )}
           </div>
           <h3 className="mt-2 font-semibold text-white group-hover:text-emerald-400 transition-colors">
-            {job.title}
+            {gig.title}
           </h3>
-          <p className="text-sm text-zinc-400">{job.company}</p>
+          <p className="text-sm text-zinc-400">{gig.company}</p>
         </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
         <span className="flex items-center gap-1">
           <MapPin className="h-3 w-3" />
-          {job.location}
+          {gig.location}
         </span>
-        {job.pay_range && (
+        {gig.pay_range && (
           <span className="flex items-center gap-1 text-emerald-400">
-            <DollarSign className="h-3 w-3" />
-            {job.pay_range}
+            <Banknote className="h-3 w-3" />
+            {gig.pay_range}
           </span>
         )}
-        {job.deadline && (
+        {gig.deadline && (
           <span className={`flex items-center gap-1 ${isExpired ? 'text-red-400' : ''}`}>
             <Clock className="h-3 w-3" />
-            {isExpired ? 'Expired' : `Deadline: ${new Date(job.deadline).toLocaleDateString()}`}
+            {isExpired
+              ? 'Expired'
+              : `Deadline: ${new Date(gig.deadline).toLocaleDateString()}`}
           </span>
         )}
       </div>
 
-      {job.poster && (
+      {gig.poster && (
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-zinc-500">
-            by {job.poster.full_name || 'Unknown'}
+            by {gig.poster.full_name || 'Unknown'}
           </span>
           <ReputationBadge
-            score={job.poster.reputation_score || 0}
-            totalReviews={job.poster.total_reviews || 0}
+            score={gig.poster.reputation_score || 0}
+            totalReviews={gig.poster.total_reviews || 0}
           />
         </div>
       )}
