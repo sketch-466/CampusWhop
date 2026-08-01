@@ -2,9 +2,19 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+const adminNav = [
+  { label: "Listings", href: "/admin/listings" },
+  { label: "Gigs", href: "/admin/jobs" },
+  { label: "Stores", href: "/admin/stores" },
+  { label: "Disputes", href: "/admin/disputes" },
+  { label: "Opportunities", href: "/admin/opportunities" },
+  { label: "Bookings", href: "/admin/bookings" },
+  { label: "Subscriptions", href: "/admin/subscriptions" },
+  { label: "Analytics", href: "/admin/analytics" },
+]
+
 export default async function AdminDisputesPage() {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
@@ -30,28 +40,19 @@ export default async function AdminDisputesPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-      <p className="text-zinc-400 mt-1">Manage listings, jobs, and disputes</p>
+      <p className="text-zinc-400 mt-1">Platform management</p>
 
-      {/* Admin Navigation */}
-      <div className="flex gap-3 mt-6 border-b border-zinc-800 pb-4">
-        <Link
-          href="/admin/listings"
-          className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
-        >
-          Listings
-        </Link>
-        <Link
-          href="/admin/jobs"
-          className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
-        >
-          Jobs
-        </Link>
-        <Link
-          href="/admin/disputes"
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
-        >
-          Disputes
-        </Link>
+      <div className="flex flex-wrap gap-2 mt-6 border-b border-zinc-800 pb-4">
+        {adminNav.map((item) => (
+          <Link key={item.href} href={item.href}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              item.href === "/admin/disputes"
+                ? "bg-emerald-600 text-white"
+                : "border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+            }`}>
+            {item.label}
+          </Link>
+        ))}
       </div>
 
       <div className="mt-6">
@@ -62,10 +63,8 @@ export default async function AdminDisputesPage() {
         ) : (
           <div className="space-y-3">
             {disputes.map((dispute: any) => (
-              <div
-                key={dispute.id}
-                className="rounded-xl border border-red-900/50 bg-zinc-900/30 p-4"
-              >
+              <div key={dispute.id}
+                className="rounded-xl border border-red-900/50 bg-zinc-900/30 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 className="font-semibold text-white">
@@ -82,15 +81,15 @@ export default async function AdminDisputesPage() {
                         Seller: {dispute.seller?.full_name || "Unknown"} · {dispute.seller?.email}
                       </p>
                       <p className="text-xs text-zinc-500">
-                        Disputed: {dispute.disputed_at ? new Date(dispute.disputed_at).toLocaleDateString() : "Unknown"}
+                        Disputed: {dispute.disputed_at
+                          ? new Date(dispute.disputed_at).toLocaleDateString()
+                          : "Unknown"}
                       </p>
                     </div>
                   </div>
-                  <div className="shrink-0">
-                    <span className="inline-flex items-center rounded-full bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-400">
-                      Disputed
-                    </span>
-                  </div>
+                  <span className="inline-flex items-center rounded-full bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-400 shrink-0">
+                    Disputed
+                  </span>
                 </div>
               </div>
             ))}
