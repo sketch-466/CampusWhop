@@ -1,9 +1,9 @@
-import { schedules } from "@trigger.dev/sdk/v3";
+import { schedules } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 
 export const expireOpportunities = schedules.task({
   id: "expire-opportunities",
-  cron: "0 0 * * *", // midnight every day
+  cron: "0 0 * * *",
   run: async () => {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,10 +14,7 @@ export const expireOpportunities = schedules.task({
 
     const { data, error } = await supabase
       .from("opportunities")
-      .update({
-        status: "closed",
-        updated_at: now,
-      })
+      .update({ status: "closed", updated_at: now })
       .eq("status", "active")
       .lt("deadline", now)
       .select("id, title");

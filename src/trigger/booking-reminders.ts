@@ -1,10 +1,10 @@
-import { schedules } from "@trigger.dev/sdk/v3";
+import { schedules } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
 export const bookingReminders = schedules.task({
   id: "booking-reminders",
-  cron: "0 8 * * *", // 8am every day
+  cron: "0 8 * * *",
   run: async () => {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,17 +13,13 @@ export const bookingReminders = schedules.task({
 
     const resend = new Resend(process.env.RESEND_API_KEY!);
 
-    // Find confirmed bookings happening in the next 24 hours
     const now = new Date();
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select(`
-        id,
-        amount,
-        proposed_time,
-        meeting_link,
+        id, amount, proposed_time, meeting_link,
         booking_services(title, duration_minutes),
         booking_slots(starts_at),
         buyer:profiles!bookings_buyer_id_fkey(full_name, email),
@@ -34,40 +30,26 @@ export const bookingReminders = schedules.task({
         `and(booking_slots.starts_at.gte.${now.toISOString()},booking_slots.starts_at.lte.${in24h.toISOString()}),and(proposed_time.gte.${now.toISOString()},proposed_time.lte.${in24h.toISOString()})`
       );
 
-    if (error) {
-      console.error("Failed to fetch upcoming bookings:", error.message);
-      throw new Error(error.message);
-    }
-
-    if (!bookings || bookings.length === 0) {
-      console.log("No upcoming bookings in next 24 hours");
-      return { reminded: 0 };
-    }
+    if (error) throw new Error(error.message);
+    if (!bookings || bookings.length === 0) return { reminded: 0 };
 
     let reminded = 0;
 
     for (const booking of bookings) {
       const service = Array.isArray(booking.booking_services)
-        ? booking.booking_services[0]
-        : booking.booking_services;
+        ? booking.booking_services[0] : booking.booking_services;
       const slot = Array.isArray(booking.booking_slots)
-        ? booking.booking_slots[0]
-        : booking.booking_slots;
+        ? booking.booking_slots[0] : booking.booking_slots;
       const buyer = Array.isArray(booking.buyer)
-        ? booking.buyer[0]
-        : booking.buyer;
+        ? booking.buyer[0] : booking.buyer;
       const creator = Array.isArray(booking.creator)
-        ? booking.creator[0]
-        : booking.creator;
+        ? booking.creator[0] : booking.creator;
 
       const sessionTime = slot?.starts_at || booking.proposed_time;
       const timeStr = sessionTime
         ? new Date(sessionTime).toLocaleString("en-NG", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
+            weekday: "short", day: "numeric", month: "short",
+            hour: "2-digit", minute: "2-digit",
           })
         : "Scheduled time";
 
@@ -75,7 +57,6 @@ export const bookingReminders = schedules.task({
         ? `<p>Meeting link: <a href="${booking.meeting_link}">${booking.meeting_link}</a></p>`
         : "";
 
-      // Email buyer
       if (buyer?.email) {
         await resend.emails.send({
           from: "noreply@campuswhop.com",
@@ -93,7 +74,6 @@ export const bookingReminders = schedules.task({
         });
       }
 
-      // Email creator
       if (creator?.email) {
         await resend.emails.send({
           from: "noreply@campuswhop.com",
@@ -114,7 +94,6 @@ export const bookingReminders = schedules.task({
       reminded++;
     }
 
-    console.log(`Sent reminders for ${reminded} bookings`);
     return { reminded };
   },
 });
