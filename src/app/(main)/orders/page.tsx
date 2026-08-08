@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { verifyPayment, confirmDelivery, disputeOrder } from '@/lib/actions/orders'
-import { verifyStoreOrder, markStoreOrderShipped, confirmStoreDelivery } from '@/lib/actions/orders-store'
+import { verifyPayment } from '@/lib/actions/orders'
+import { verifyStoreOrder } from '@/lib/actions/orders-store'
 import OrderActions from '@/components/shared/order-actions'
 
 const STATUS_STYLES: Record<string, string> = {
@@ -26,7 +26,12 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 type PageProps = {
-  searchParams: Promise<{ reference?: string; trxref?: string; tab?: string }>
+  searchParams: Promise<{
+    reference?: string
+    trxref?: string
+    tab?: string
+    show?: string
+  }>
 }
 
 export default async function OrdersPage({ searchParams }: PageProps) {
@@ -37,6 +42,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const params = await searchParams
   const reference = params.reference || params.trxref
   const tab = params.tab === 'selling' ? 'selling' : 'buying'
+  const showAll = params.show === 'all'
 
   if (reference) {
     if (reference.startsWith('cw_store_')) {
@@ -71,8 +77,25 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       .order('created_at', { ascending: false }),
   ])
 
-  const buying = buyingOrders ?? []
-  const selling = sellingOrders ?? []
+  const allBuying = buyingOrders ?? []
+  const allSelling = sellingOrders ?? []
+
+  // By default hide completed and cancelled orders
+  const hiddenStatuses = ['completed', 'cancelled', 'refunded']
+  const buying = showAll
+    ? allBuying
+    : allBuying.filter((o) => !hiddenStatuses.includes(o.status))
+  const selling = showAll
+    ? allSelling
+    : allSelling.filter((o) => !hiddenStatuses.includes(o.status))
+
+  const hiddenBuyingCount = allBuying.filter((o) =>
+    hiddenStatuses.includes(o.status)
+  ).length
+  const hiddenSellingCount = allSelling.filter((o) =>
+    hiddenStatuses.includes(o.status)
+  ).length
+  const hiddenCount = tab === 'buying' ? hiddenBuyingCount : hiddenSellingCount
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
@@ -92,7 +115,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       <div className="border-b border-zinc-800 bg-zinc-900/50 px-4 pt-4 pb-0">
         <div className="flex gap-1 rounded-lg bg-zinc-800 p-1">
           <Link
-            href="/orders?tab=buying"
+            href={`/orders?tab=buying${showAll ? '&show=all' : ''}`}
             className={`flex-1 rounded-md py-1.5 text-center text-xs font-medium transition-colors ${
               tab === 'buying'
                 ? 'bg-zinc-700 text-zinc-100'
@@ -102,7 +125,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
             Buying ({buying.length})
           </Link>
           <Link
-            href="/orders?tab=selling"
+            href={`/orders?tab=selling${showAll ? '&show=all' : ''}`}
             className={`flex-1 rounded-md py-1.5 text-center text-xs font-medium transition-colors ${
               tab === 'selling'
                 ? 'bg-zinc-700 text-zinc-100'
@@ -116,10 +139,10 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
       <div className="px-4 py-4 space-y-3">
         {tab === 'buying' ? (
-          buying.length === 0 ? (
+          buying.length === 0 && !showAll ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <span className="text-5xl mb-3">🛍️</span>
-              <h3 className="text-sm font-semibold text-zinc-300 mb-1">No orders yet</h3>
+              <h3 className="text-sm font-semibold text-zinc-300 mb-1">No active orders</h3>
               <p className="text-xs text-zinc-500 mb-4">
                 Start shopping on the marketplace or student stores
               </p>
@@ -135,10 +158,10 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               <OrderCard key={order.id} order={order} role="buying" />
             ))
           )
-        ) : selling.length === 0 ? (
+        ) : selling.length === 0 && !showAll ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="text-5xl mb-3">📦</span>
-            <h3 className="text-sm font-semibold text-zinc-300 mb-1">No sales yet</h3>
+            <h3 className="text-sm font-semibold text-zinc-300 mb-1">No active sales</h3>
             <p className="text-xs text-zinc-500">
               Orders from buyers will appear here
             </p>
@@ -148,6 +171,24 @@ export default async function OrdersPage({ searchParams }: PageProps) {
             <OrderCard key={order.id} order={order} role="selling" />
           ))
         )}
+
+        {/* Show/hide history toggle */}
+        {hiddenCount > 0 && !showAll && (
+          <Link
+            href={`/orders?tab=${tab}&show=all`}
+            className="block w-full rounded-lg border border-dashed border-zinc-700 py-3 text-center text-xs text-zinc-500 hover:border-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Show {hiddenCount} completed / cancelled order{hiddenCount !== 1 ? 's' : ''}
+          </Link>
+        )}
+        {showAll && hiddenCount > 0 && (
+          <Link
+            href={`/orders?tab=${tab}`}
+            className="block w-full rounded-lg border border-dashed border-zinc-700 py-3 text-center text-xs text-zinc-500 hover:border-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Hide completed / cancelled orders
+          </Link>
+        )}
       </div>
     </div>
   )
@@ -155,7 +196,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
 function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) {
   const isStoreOrder = !!order.store_product_id
-  const isDigital = isStoreOrder && !!order.digital_file_url
+  const isDigital = !!order.digital_file_url
 
   const title = isStoreOrder
     ? (order.store_products?.title ?? 'Store Product')
@@ -204,11 +245,8 @@ function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) 
           {isStoreOrder && storeName && (
             <div className="flex items-center gap-1.5">
               {storeLogo ? (
-                <img
-                  src={storeLogo}
-                  alt={storeName}
-                  className="h-4 w-4 rounded-full object-cover"
-                />
+                <img src={storeLogo} alt={storeName}
+                  className="h-4 w-4 rounded-full object-cover" />
               ) : (
                 <div className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-700 text-[8px] text-zinc-400">
                   {storeName[0]}
@@ -229,11 +267,8 @@ function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) 
           {role === 'selling' && order.buyer && (
             <div className="flex items-center gap-1.5">
               {order.buyer.avatar_url ? (
-                <img
-                  src={order.buyer.avatar_url}
-                  alt={order.buyer.full_name}
-                  className="h-4 w-4 rounded-full object-cover"
-                />
+                <img src={order.buyer.avatar_url} alt={order.buyer.full_name}
+                  className="h-4 w-4 rounded-full object-cover" />
               ) : (
                 <div className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-700 text-[8px] text-zinc-400">
                   {order.buyer.full_name?.[0]?.toUpperCase()}

@@ -1,18 +1,21 @@
 import Link from "next/link";
 import {
-  Briefcase,
   ShoppingBag,
   Store,
   Shield,
   Star,
-  Home,
   ArrowRight,
+  Users,
+  Calendar,
+  Zap,
+  BookOpen,
+  TrendingUp,
 } from "lucide-react";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
-      {/* 1. Navbar */}
+      {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b border-zinc-800/50 bg-[#09090b]/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link href="/" className="text-xl font-bold text-emerald-500">
@@ -36,112 +39,135 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* 2. Hero Section */}
+      {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:pt-24 sm:pb-16">
         <div className="text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400">
+            🚀 Now live at FUNAI · Free to join
+          </div>
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
-            The Economic OS for
+            The Operating System for
             <br />
-            <span className="text-emerald-500">Nigerian Students</span>
+            <span className="text-emerald-500">African Student Entrepreneurs</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl">
-            Earn money, find jobs, sell products, build your business, and grow
-            your reputation — all in one platform built for Nigerian university
-            students.
+            Sell products, offer services, take bookings, run subscriptions, and
+            grow your reputation — everything a student entrepreneur needs in one platform.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/register"
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-emerald-600"
             >
-              Get Started Free
+              Start for Free
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/login"
+              href="/creators"
               className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-transparent px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-zinc-800"
             >
-              Sign In
+              Browse Creators
             </Link>
           </div>
-          <p className="mt-6 text-sm text-zinc-500">
-            Launching at FUNAI · Free to join · No credit card required
+          <p className="mt-4 text-sm text-zinc-500">
+            No credit card required · Takes 2 minutes to set up
           </p>
         </div>
       </section>
 
-      {/* 3. Stats Bar */}
-      <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      {/* Stats Bar */}
+      <section className="mx-auto max-w-6xl px-4 pb-16">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { icon: "🎓", label: "1 University" },
-            { icon: "💼", label: "Jobs & Gigs" },
-            { icon: "🛒", label: "Marketplace" },
-            { icon: "🔒", label: "Escrow Protected" },
+            { icon: "🎓", label: "FUNAI Launch Campus" },
+            { icon: "💳", label: "Escrow Protected" },
+            { icon: "⚡", label: "Instant Digital Delivery" },
+            { icon: "🔄", label: "Recurring Subscriptions" },
           ].map((stat) => (
             <div
               key={stat.label}
               className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3"
             >
               <span className="text-lg">{stat.icon}</span>
-              <span className="text-sm font-medium text-zinc-300">
-                {stat.label}
-              </span>
+              <span className="text-xs font-medium text-zinc-300">{stat.label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 4. Features Section */}
+      {/* Features */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">
-          Everything students need to thrive
-        </h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Every tool a student entrepreneur needs
+          </h2>
+          <p className="mt-3 text-zinc-400">
+            Built specifically for Nigerian university students who want to make money.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
-              icon: Briefcase,
-              title: "Campus Jobs",
+              icon: Users,
+              title: "Creator Profiles",
               description:
-                "Find internships, gigs, ambassador roles, and remote work from verified campus employers.",
+                "Set up your creator page, showcase your skills, and get discovered by students who need to hire someone like you.",
             },
             {
               icon: ShoppingBag,
               title: "Marketplace",
               description:
-                "Buy and sell phones, laptops, books, and services safely with escrow protection.",
+                "Buy and sell physical and digital products. Payments are held in escrow and released when delivery is confirmed.",
+            },
+            {
+              icon: Calendar,
+              title: "Booking System",
+              description:
+                "Offer sessions as a tutor, designer, or consultant. Students book your time and pay upfront — you confirm and deliver.",
+            },
+            {
+              icon: TrendingUp,
+              title: "Subscriptions",
+              description:
+                "Create monthly subscription plans. Charge students for recurring access to your content, mentorship, or services.",
             },
             {
               icon: Store,
               title: "Student Stores",
               description:
-                "Launch your own storefront, sell products, and build a campus business from your phone.",
+                "Launch your own branded storefront. Sell multiple products, manage inventory, and build a campus brand.",
+            },
+            {
+              icon: Zap,
+              title: "Gigs Board",
+              description:
+                "Post freelance gigs or find paid work. Connect students who need services with creators who offer them.",
+            },
+            {
+              icon: BookOpen,
+              title: "Opportunities Hub",
+              description:
+                "Find scholarships, grants, competitions, and internships — all curated and relevant to Nigerian university students.",
             },
             {
               icon: Shield,
               title: "Escrow Payments",
               description:
-                "Every transaction is protected. Funds release only when both parties confirm delivery.",
+                "Every transaction is protected. Funds only release when both parties are satisfied. No more getting scammed.",
             },
             {
               icon: Star,
               title: "Reputation Engine",
               description:
-                "Build a verified track record. Your reputation follows you across every campus.",
-            },
-            {
-              icon: Home,
-              title: "Housing Platform",
-              description:
-                "Find verified hostels, rate landlords, and connect with roommates near your campus.",
+                "Build a verified track record across every sale, booking, and gig. Your reputation is your most valuable asset.",
             },
           ].map((feature) => (
             <div
               key={feature.title}
               className="group rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-colors hover:border-zinc-700 hover:bg-zinc-900/50"
             >
-              <feature.icon className="h-8 w-8 text-emerald-500" />
-              <h3 className="mt-4 text-lg font-semibold text-white">
+              <feature.icon className="h-7 w-7 text-emerald-500" />
+              <h3 className="mt-4 text-base font-semibold text-white">
                 {feature.title}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
@@ -152,30 +178,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. How It Works Section */}
+      {/* Who is this for */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">
-          Get started in 3 steps
+        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-10">
+          Built for every kind of student entrepreneur
         </h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { emoji: "🎨", type: "Designers", action: "Sell design packages, take bookings, run a monthly retainer" },
+            { emoji: "📚", type: "Tutors", action: "Offer fixed time slots, charge per session, build a subscriber base" },
+            { emoji: "📸", type: "Photographers", action: "Post your portfolio, accept bookings, get paid upfront" },
+            { emoji: "💻", type: "Developers", action: "Offer consultation calls, sell templates, take project requests" },
+            { emoji: "✍️", type: "Writers", action: "Sell articles, offer content subscriptions, take writing gigs" },
+            { emoji: "🎵", type: "Musicians", action: "Sell beats, offer lessons, run a monthly content subscription" },
+          ].map((item) => (
+            <div
+              key={item.type}
+              className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5"
+            >
+              <span className="text-2xl">{item.emoji}</span>
+              <h3 className="mt-3 font-semibold text-white">{item.type}</h3>
+              <p className="mt-1 text-sm text-zinc-400">{item.action}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
+        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-10">
+          Up and running in 3 steps
+        </h2>
+        <div className="grid gap-6 sm:grid-cols-3">
           {[
             {
               step: "1",
               title: "Create your account",
-              description:
-                "Sign up with your university email or Google account in under a minute.",
+              description: "Sign up with your university email or Google. Takes under 2 minutes.",
             },
             {
               step: "2",
-              title: "Complete your profile",
-              description:
-                "Add your university, matric number, and what you're here to do.",
+              title: "Set up your creator profile",
+              description: "Add your skills, tagline, and what you offer. Get discovered immediately.",
             },
             {
               step: "3",
-              title: "Start earning or buying",
-              description:
-                "Post a gig, list a product, or browse opportunities on your campus.",
+              title: "Start earning",
+              description: "Post a listing, create a booking service, or launch a subscription plan.",
             },
           ].map((item) => (
             <div key={item.step} className="flex gap-4">
@@ -183,40 +232,33 @@ export default function HomePage() {
                 {item.step}
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">
-                  {item.title}
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-zinc-400">
-                  {item.description}
-                </p>
+                <h3 className="text-base font-semibold text-white">{item.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-zinc-400">{item.description}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 6. Testimonials Section */}
+      {/* Testimonials */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">
-          Built for students like you
+        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-10">
+          What FUNAI students are saying
         </h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
             {
-              quote:
-                "CampusWhop is exactly what FUNAI students have been waiting for.",
+              quote: "I set up my design store in 10 minutes. Already got my first booking the same day.",
               name: "Chukwuemeka O.",
               detail: "300 Level, Computer Science, FUNAI",
             },
             {
-              quote:
-                "Finally a platform where I can sell my design work and actually get paid safely.",
+              quote: "The subscription feature is a game changer. I now have monthly income from my tutoring.",
               name: "Adaeze N.",
               detail: "200 Level, Mass Communication, FUNAI",
             },
             {
-              quote:
-                "The escrow feature alone makes this worth using. No more being scammed.",
+              quote: "Escrow means I actually get paid. No more trusting strangers with my money.",
               name: "Emeka I.",
               detail: "400 Level, Engineering, FUNAI",
             },
@@ -225,14 +267,10 @@ export default function HomePage() {
               key={testimonial.name}
               className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6"
             >
-              <span className="text-2xl text-emerald-500">"</span>
-              <p className="text-sm leading-relaxed text-zinc-300">
-                {testimonial.quote}
-              </p>
+              <span className="text-2xl text-emerald-500">&ldquo;</span>
+              <p className="text-sm leading-relaxed text-zinc-300">{testimonial.quote}</p>
               <div className="mt-4">
-                <p className="text-sm font-medium text-white">
-                  — {testimonial.name}
-                </p>
+                <p className="text-sm font-medium text-white">— {testimonial.name}</p>
                 <p className="text-xs text-zinc-500">{testimonial.detail}</p>
               </div>
             </div>
@@ -240,48 +278,46 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 7. CTA Section */}
+      {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-        <div className="rounded-2xl bg-emerald-900 px-6 py-12 text-center sm:px-12 sm:py-16">
+        <div className="rounded-2xl bg-emerald-900/40 border border-emerald-800/50 px-6 py-12 text-center sm:px-12 sm:py-16">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            Ready to take control of your campus life?
+            Your campus business starts today
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-emerald-100">
-            Join thousands of students building their future on CampusWhop.
+          <p className="mx-auto mt-4 max-w-lg text-zinc-300">
+            Join FUNAI students already selling, booking, and earning on CampusWhop.
           </p>
           <Link
             href="/register"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-8 py-3.5 text-base font-semibold text-emerald-900 transition-colors hover:bg-zinc-100"
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-emerald-600"
           >
             Get Started Free
             <ArrowRight className="h-4 w-4" />
           </Link>
+          <p className="mt-4 text-xs text-zinc-500">Free forever for students · No credit card needed</p>
         </div>
       </section>
 
-      {/* 8. Footer */}
+      {/* Footer */}
       <footer className="border-t border-zinc-800 bg-[#09090b]">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="grid gap-8 sm:grid-cols-3">
             <div>
-              <Link
-                href="/"
-                className="text-lg font-bold text-emerald-500"
-              >
+              <Link href="/" className="text-lg font-bold text-emerald-500">
                 CampusWhop
               </Link>
               <p className="mt-2 text-sm text-zinc-500">
-                The Economic OS for Nigerian Students.
+                The Operating System for African Student Entrepreneurs.
               </p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-zinc-300">Product</h4>
+              <h4 className="text-sm font-semibold text-zinc-300">Platform</h4>
               <ul className="mt-3 space-y-2 text-sm text-zinc-500">
-                <li>Jobs</li>
-                <li>Marketplace</li>
-                <li>Stores</li>
-                <li>Housing</li>
-                <li>Reputation</li>
+                <li><Link href="/marketplace" className="hover:text-zinc-300">Marketplace</Link></li>
+                <li><Link href="/creators" className="hover:text-zinc-300">Creators</Link></li>
+                <li><Link href="/store" className="hover:text-zinc-300">Stores</Link></li>
+                <li><Link href="/gigs" className="hover:text-zinc-300">Gigs</Link></li>
+                <li><Link href="/opportunities" className="hover:text-zinc-300">Opportunities</Link></li>
               </ul>
             </div>
             <div>
