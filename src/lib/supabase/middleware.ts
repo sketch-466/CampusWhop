@@ -29,45 +29,52 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname
 
-  // Routes that require no auth
+  // Fully public — no auth needed at all
   const publicRoutes = [
-  '/',
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/verify',
-  '/auth/callback',
-  '/marketplace',
-  '/marketplace/',
-  '/store',
-]
+    '/',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify',
+    '/auth/callback',
+    '/marketplace',
+    '/creators',
+    '/gigs',
+    '/store',
+    '/opportunities',
+    '/jobs',
+  ]
 
-// And update the check to use startsWith instead of exact match:
-if (!user && !publicRoutes.some(r => path.startsWith(r))) {
-  return NextResponse.redirect(new URL('/login', request.url))
-}
+  const isPublic = publicRoutes.some(r => path === r || path.startsWith(r + '/'))
 
-  // If logged in and trying to access auth pages → redirect to dashboard
+  // Auth pages → redirect logged-in users to dashboard
   if (user && ['/login', '/register'].includes(path)) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // If not logged in and trying to access protected routes → redirect to login
-  if (!user && !publicRoutes.some(r => path.startsWith(r))) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Protected routes → redirect unauthenticated users to login
+  // Preserve the original URL so they return after signing in
+  if (!user && !isPublic) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', path)
+    return NextResponse.redirect(loginUrl)
   }
 
-  // If logged in but onboarding not complete → force to onboarding
-  // (except if already going to onboarding or callback)
-  if (user && !path.startsWith('/onboarding') && !path.startsWith('/auth')) {
+  // Onboarding gate — logged-in users who haven't completed onboarding
+  if (
+    user &&
+    !path.startsWith('/onboarding') &&
+    !path.startsWith('/auth') &&
+    !isPublic
+  ) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('onboarding_completed')
       .eq('id', user.id)
       .single()
 
-    if (profile && !profile.onboarding_completed && path !== '/onboarding') {
+    if (profile && !profile.onboarding_completed) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }

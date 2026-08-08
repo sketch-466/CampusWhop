@@ -57,7 +57,6 @@ export async function registerUser(formData: RegisterInput) {
 
   const userId = authData.user.id;
 
-  // Update profile using admin client
   const { error: profileError } = await adminClient
     .from("profiles")
     .update({ full_name: fullName })
@@ -67,7 +66,6 @@ export async function registerUser(formData: RegisterInput) {
     return { error: "Failed to update profile" };
   }
 
-  // Insert token using admin client (bypasses RLS)
   const token = generateToken();
   const expiresAt = getExpiration(24);
 
@@ -83,7 +81,6 @@ export async function registerUser(formData: RegisterInput) {
     return { error: "Failed to generate verification token" };
   }
 
-  // Send verification email
   const verifyUrl = `${SITE_URL}/verify?token=${token}`;
   try {
     await resend.emails.send({
@@ -144,7 +141,6 @@ export async function verifyEmail(token: string) {
 export async function resendVerificationEmail(userId: string) {
   const adminClient = createAdminClient();
 
-  // Rate limit: check if token created in last 60 seconds
   const { data: recentTokens } = await adminClient
     .from("email_verification_tokens")
     .select("created_at")
@@ -202,7 +198,10 @@ export async function resendVerificationEmail(userId: string) {
   return { success: true, message: "Verification email sent" };
 }
 
-export async function loginUser(formData: LoginInput) {
+export async function loginUser(
+  formData: LoginInput,
+  redirectTo: string = "/dashboard"
+) {
   const validated = loginSchema.safeParse(formData);
   if (!validated.success) {
     return { error: validated.error.errors[0].message };
@@ -241,7 +240,15 @@ export async function loginUser(formData: LoginInput) {
     redirect("/onboarding");
   }
 
-  redirect("/dashboard");
+  // Honour the original destination, but never redirect back to auth pages
+  const safeRedirect =
+    redirectTo.startsWith("/login") ||
+    redirectTo.startsWith("/register") ||
+    redirectTo === "/"
+      ? "/dashboard"
+      : redirectTo;
+
+  redirect(safeRedirect);
 }
 
 export async function signInWithGoogle() {

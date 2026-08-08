@@ -1,9 +1,11 @@
+
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +22,9 @@ import { loginUser, resendVerificationEmail } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [unverifiedUserId, setUnverifiedUserId] = useState<string>();
@@ -40,7 +45,7 @@ export default function LoginPage() {
     setUnverifiedUserId(undefined);
     setResendSuccess(undefined);
 
-    const result = await loginUser(data);
+    const result = await loginUser(data, redirectTo);
 
     if (result?.error) {
       setError(result.error);
@@ -91,9 +96,7 @@ export default function LoginPage() {
                   className={cn(errors.email && "border-destructive")}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive">
-                    {errors.email.message}
-                  </p>
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
                 )}
               </div>
 
@@ -107,17 +110,13 @@ export default function LoginPage() {
                   className={cn(errors.password && "border-destructive")}
                 />
                 {errors.password && (
-                  <p className="text-sm text-destructive">
-                    {errors.password.message}
-                  </p>
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
               </div>
 
               {error && (
                 <div className="space-y-2">
-                  <p className="text-sm text-destructive text-center">
-                    {error}
-                  </p>
+                  <p className="text-sm text-destructive text-center">{error}</p>
                   {unverifiedUserId && (
                     <Button
                       type="button"
@@ -127,33 +126,22 @@ export default function LoginPage() {
                       onClick={handleResend}
                       disabled={resendLoading}
                     >
-                      {resendLoading
-                        ? "Sending..."
-                        : "Resend verification email"}
+                      {resendLoading ? "Sending..." : "Resend verification email"}
                     </Button>
                   )}
                   {resendSuccess && (
-                    <p className="text-sm text-brand-500 text-center">
-                      {resendSuccess}
-                    </p>
+                    <p className="text-sm text-brand-500 text-center">{resendSuccess}</p>
                   )}
                 </div>
               )}
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="flex items-center justify-between text-sm">
-              <Link
-                href="/forgot-password"
-                className="text-brand-500 hover:underline"
-              >
+              <Link href="/forgot-password" className="text-brand-500 hover:underline">
                 Forgot password?
               </Link>
             </div>

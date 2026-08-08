@@ -46,13 +46,12 @@ export default function HomePage() {
             🚀 Now live at FUNAI · Free to join
           </div>
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
-            The Operating System for
-            <br />
-            <span className="text-emerald-500">African Student Entrepreneurs</span>
+            Where FUNAI Students
+<br />
+<span className="text-emerald-500">Make Money</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl">
-            Sell products, offer services, take bookings, run subscriptions, and
-            grow your reputation — everything a student entrepreneur needs in one platform.
+            Sell your skills, products, and services to fellow students. Get paid safely with escrow. Build a reputation that follows you beyond campus.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
@@ -240,43 +239,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-10">
-          What FUNAI students are saying
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              quote: "I set up my design store in 10 minutes. Already got my first booking the same day.",
-              name: "Chukwuemeka O.",
-              detail: "300 Level, Computer Science, FUNAI",
-            },
-            {
-              quote: "The subscription feature is a game changer. I now have monthly income from my tutoring.",
-              name: "Adaeze N.",
-              detail: "200 Level, Mass Communication, FUNAI",
-            },
-            {
-              quote: "Escrow means I actually get paid. No more trusting strangers with my money.",
-              name: "Emeka I.",
-              detail: "400 Level, Engineering, FUNAI",
-            },
-          ].map((testimonial) => (
-            <div
-              key={testimonial.name}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6"
-            >
-              <span className="text-2xl text-emerald-500">&ldquo;</span>
-              <p className="text-sm leading-relaxed text-zinc-300">{testimonial.quote}</p>
-              <div className="mt-4">
-                <p className="text-sm font-medium text-white">— {testimonial.name}</p>
-                <p className="text-xs text-zinc-500">{testimonial.detail}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 px-6 py-12 text-center sm:px-12">
+    <h2 className="text-2xl font-bold text-white sm:text-3xl">
+      Just getting started — and that&apos;s the point.
+    </h2>
+    <p className="mx-auto mt-4 max-w-xl text-zinc-400 leading-relaxed">
+      CampusWhop is launching now at FUNAI. The first students to join will be the ones who shape what this becomes. No fake reviews. No inflated numbers. Just a platform built for you, launching with you.
+    </p>
+    <Link
+      href="/register"
+      className="mt-8 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-emerald-600"
+    >
+      Join as a Founding Member
+      <ArrowRight className="h-4 w-4" />
+    </Link>
+  </div>
+</section>
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
