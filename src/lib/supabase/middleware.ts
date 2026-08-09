@@ -63,11 +63,11 @@ export async function updateSession(request: NextRequest) {
 
   // Onboarding gate — logged-in users who haven't completed onboarding
   if (
-    user &&
-    !path.startsWith('/onboarding') &&
-    !path.startsWith('/auth') &&
-    !isPublic
-  ) {
+  user &&
+  !path.startsWith('/onboarding') &&
+  !path.startsWith('/auth') &&
+  !isPublic
+) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('onboarding_completed')

@@ -399,7 +399,6 @@ export async function completeOnboarding(formData: {
       university: formData.university,
       matric_number: formData.matricNumber,
       phone_number: formData.phoneNumber || null,
-      onboarding_completed: true,
       updated_at: new Date().toISOString(),
     })
     .eq("id", user.id);
@@ -409,9 +408,8 @@ export async function completeOnboarding(formData: {
   }
 
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  redirect("/onboarding/intent");
 }
-
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
