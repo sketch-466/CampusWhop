@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -21,7 +20,7 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { loginUser, resendVerificationEmail } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
 
@@ -169,5 +168,17 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
