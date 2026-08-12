@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -13,6 +14,33 @@ export async function GET(request: Request) {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
+        const adminClient = createAdminClient();
+
+        // Ensure Google users have email_verified = true
+        // and full_name populated from Google metadata
+        const googleName = user.user_metadata?.full_name ||
+          user.user_metadata?.name || null;
+
+        await adminClient
+          .from("profiles")
+          .update({
+            email_verified: true,
+            full_name: googleName,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", user.id)
+          .is("full_name", null); // only set name if not already set
+
+        // Also ensure email_verified for users who already have a name
+        await adminClient
+          .from("profiles")
+          .update({
+            email_verified: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", user.id)
+          .not("full_name", "is", null);
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("onboarding_completed")
