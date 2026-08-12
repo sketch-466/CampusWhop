@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
+import { Star } from "lucide-react";
 
 interface Seller {
   full_name: string | null;
@@ -9,6 +10,7 @@ interface Seller {
   university: string | null;
   reputation_score: number | null;
   total_reviews: number | null;
+  is_founding_creator?: boolean | null;
 }
 
 interface ListingCardProps {
@@ -19,6 +21,7 @@ interface ListingCardProps {
     category: string;
     product_type: string;
     images: string[];
+    is_featured?: boolean | null;
     seller: Seller | null;
   };
 }
@@ -30,6 +33,7 @@ export function ListingCard({ listing }: ListingCardProps) {
     university: null,
     reputation_score: 0,
     total_reviews: 0,
+    is_founding_creator: false,
   };
 
   const initials = seller.full_name
@@ -71,6 +75,15 @@ export function ListingCard({ listing }: ListingCardProps) {
             No image
           </div>
         )}
+
+        {/* Featured banner */}
+        {listing.is_featured && (
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-center gap-1 bg-amber-500/90 py-1 text-[10px] font-semibold text-white">
+            <Star className="h-3 w-3 fill-white" />
+            Featured
+          </div>
+        )}
+
         <Badge
           variant="outline"
           className="absolute top-2 right-2 bg-zinc-950/80"
@@ -78,6 +91,7 @@ export function ListingCard({ listing }: ListingCardProps) {
           {listing.product_type === "physical" ? "Physical" : "Digital"}
         </Badge>
       </div>
+
       <div className="p-4">
         <div className="flex items-center gap-2 mb-2">
           <Badge variant="default" className="text-[10px]">
@@ -91,16 +105,18 @@ export function ListingCard({ listing }: ListingCardProps) {
         <div className="mt-3 flex items-center gap-2">
           <Avatar className="h-5 w-5">
             {seller.avatar_url && (
-              <AvatarImage
-                src={seller.avatar_url}
-                alt={seller.full_name || ""}
-              />
+              <AvatarImage src={seller.avatar_url} alt={seller.full_name || ""} />
             )}
             <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <span className="text-xs text-zinc-400">
             {seller.full_name || "Unknown"}
           </span>
+          {seller.is_founding_creator && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+              🌟 Founder
+            </span>
+          )}
           <ReputationBadge
             score={seller.reputation_score || 0}
             totalReviews={seller.total_reviews || 0}

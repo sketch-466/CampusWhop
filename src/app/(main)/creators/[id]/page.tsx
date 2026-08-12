@@ -35,7 +35,7 @@ export default async function CreatorProfilePage({
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, avatar_url, university, bio, tagline, creator_type, skills, portfolio_url, twitter_url, linkedin_url, whatsapp_number, phone_number, is_verified, reputation_score, total_reviews"
+      "id, full_name, avatar_url, university, bio, tagline, creator_type, skills, portfolio_url, twitter_url, linkedin_url, whatsapp_number, phone_number, is_verified, is_founding_creator, reputation_score, total_reviews"
     )
     .eq("id", id)
     .single();
@@ -44,10 +44,11 @@ export default async function CreatorProfilePage({
 
   const { data: listings } = await supabase
     .from("listings")
-    .select("id, title, price, images, product_type")
+    .select("id, title, price, images, product_type, is_featured")
     .eq("seller_id", id)
     .eq("status", "active")
     .is("deleted_at", null)
+    .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(6);
 
@@ -102,6 +103,22 @@ export default async function CreatorProfilePage({
 
       {/* ── HERO ── */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6">
+
+        {/* Founding creator banner */}
+        {profile.is_founding_creator && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+            <span className="text-base">🌟</span>
+            <div>
+              <p className="text-xs font-semibold text-amber-400">
+                Founding Creator
+              </p>
+              <p className="text-xs text-amber-400/70">
+                One of the first creators to launch on CampusWhop
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-start gap-4">
           <Avatar className="h-20 w-20 shrink-0">
             {profile.avatar_url && (
@@ -348,16 +365,21 @@ export default async function CreatorProfilePage({
                 <Link
                   key={listing.id}
                   href={`/marketplace/${listing.id}`}
-                  className="group rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 transition-colors hover:border-zinc-600"
+                  className="group relative rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 transition-colors hover:border-zinc-600"
                 >
+                  {listing.is_featured && (
+                    <div className="absolute top-0 left-0 right-0 flex items-center justify-center gap-1 rounded-t-lg bg-amber-500/90 py-0.5 text-[10px] font-semibold text-white">
+                      ⭐ Featured
+                    </div>
+                  )}
                   {image ? (
                     <img
                       src={image}
                       alt={listing.title}
-                      className="mb-2 h-24 w-full rounded-md object-cover"
+                      className={`mb-2 h-24 w-full rounded-md object-cover ${listing.is_featured ? "mt-4" : ""}`}
                     />
                   ) : (
-                    <div className="mb-2 h-24 w-full rounded-md bg-zinc-800" />
+                    <div className={`mb-2 h-24 w-full rounded-md bg-zinc-800 ${listing.is_featured ? "mt-4" : ""}`} />
                   )}
                   <p className="truncate text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">
                     {listing.title}

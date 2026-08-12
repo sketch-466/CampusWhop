@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -53,10 +53,24 @@ export function IntentForm({ fullName }: IntentFormProps) {
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<IntentValue | null>(null);
   const [error, setError] = useState<string>();
+  const [userId, setUserId] = useState<string | null>(null);
 
   const firstName = fullName.split(" ")[0] || "there";
 
-  const handleSelect = async (intent: typeof INTENTS[number]) => {
+  // Get user ID once on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id ?? null);
+    });
+  }, []);
+
+  const handleSelect = (intent: (typeof INTENTS)[number]) => {
+    if (!userId) {
+      setError("Session expired. Please refresh the page.");
+      return;
+    }
+
     setSelected(intent.value);
     setError(undefined);
 
@@ -69,7 +83,7 @@ export function IntentForm({ fullName }: IntentFormProps) {
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", (await supabase.auth.getUser()).data.user!.id);
+        .eq("id", userId);
 
       if (error) {
         setError("Something went wrong. Please try again.");
@@ -82,18 +96,21 @@ export function IntentForm({ fullName }: IntentFormProps) {
   };
 
   const handleSkip = () => {
+    if (!userId) {
+      router.push("/dashboard");
+      return;
+    }
+
     startTransition(async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({
-            onboarding_completed: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id);
-      }
+      await supabase
+        .from("profiles")
+        .update({
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
       router.push("/dashboard");
     });
   };
@@ -117,7 +134,7 @@ export function IntentForm({ fullName }: IntentFormProps) {
           <button
             key={intent.value}
             onClick={() => handleSelect(intent)}
-            disabled={isPending}
+            disabled={isPending || !userId}
             className={`w-full rounded-xl border p-4 text-left transition-all disabled:opacity-60 ${
               selected === intent.value
                 ? "border-emerald-500 bg-emerald-500/10"
@@ -140,7 +157,9 @@ export function IntentForm({ fullName }: IntentFormProps) {
         ))}
       </div>
 
-      {error && <p className="mt-3 text-center text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="mt-3 text-center text-sm text-red-400">{error}</p>
+      )}
 
       <div className="mt-6 text-center">
         <button

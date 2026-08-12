@@ -18,6 +18,7 @@ interface SellerProfile {
   university: string | null;
   reputation_score: number | null;
   total_reviews: number | null;
+  is_founding_creator: boolean | null;
 }
 
 export async function createListing(data: ListingInput, images: string[]) {
@@ -114,10 +115,11 @@ export async function getActiveListings(filters?: {
     .from("listings")
     .select(`
       *,
-      seller:profiles(full_name, avatar_url, university, reputation_score, total_reviews)
+      seller:profiles(full_name, avatar_url, university, reputation_score, total_reviews, is_founding_creator)
     `)
     .eq("status", "active")
     .is("deleted_at", null)
+    .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (filters?.category) {
@@ -143,7 +145,9 @@ export async function getActiveListings(filters?: {
 
   const listings = (data || []).map((item) => ({
     ...item,
-    seller: normalizeRelation<SellerProfile>(item.seller as SellerProfile | SellerProfile[] | null),
+    seller: normalizeRelation<SellerProfile>(
+      item.seller as SellerProfile | SellerProfile[] | null
+    ),
   }));
 
   return { listings };

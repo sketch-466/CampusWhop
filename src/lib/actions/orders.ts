@@ -2,10 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { paystackRequest } from "@/lib/paystack/client";
+import { paystackRequest, calculatePlatformFee } from "@/lib/paystack/client";
 import { revalidatePath } from "next/cache";
-
-const PLATFORM_FEE_PERCENT = 0.10;
 
 export async function initializeOrder(listingId: string) {
   const supabase = await createClient();
@@ -19,10 +17,10 @@ export async function initializeOrder(listingId: string) {
   }
 
   const { data: listing } = await supabase
-  .from("listings")
-  .select("*, seller:profiles(id, full_name, email)")
-  .eq("id", listingId)
-  .single();
+    .from("listings")
+    .select("*, seller:profiles(id, full_name, email, fee_exempt_until)")
+    .eq("id", listingId)
+    .single();
 
   if (!listing) {
     return { error: "Listing not found" };
@@ -47,8 +45,15 @@ export async function initializeOrder(listingId: string) {
   }
 
   const amount = listing.price;
-  const platformFee = Math.round(amount * PLATFORM_FEE_PERCENT * 100) / 100;
-  const sellerAmount = amount - platformFee;
+
+  // Check if seller is fee-exempt (founding creator within 3-month window)
+  const seller = Array.isArray(listing.seller)
+    ? listing.seller[0]
+    : listing.seller;
+  const { platformFee, sellerAmount } = calculatePlatformFee(
+    amount,
+    seller?.fee_exempt_until
+  );
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -69,54 +74,54 @@ export async function initializeOrder(listingId: string) {
   }
 
   try {
-  const isDirectPay = listing.payment_type === "direct";
+    const isDirectPay = listing.payment_type === "direct";
 
-  const paystackBody: Record<string, unknown> = {
-    email: user.email,
-    amount: Math.round(amount * 100),
-    reference: `cw_${order.id}`,
-    callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/orders`,
-    metadata: {
-      order_id: order.id,
-      listing_id: listingId,
-      buyer_id: user.id,
-      seller_id: listing.seller_id,
-      payment_type: listing.payment_type,
-    },
-  };
+    const paystackBody: Record<string, unknown> = {
+      email: user.email,
+      amount: Math.round(amount * 100),
+      reference: `cw_${order.id}`,
+      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/orders`,
+      metadata: {
+        order_id: order.id,
+        listing_id: listingId,
+        buyer_id: user.id,
+        seller_id: listing.seller_id,
+        payment_type: listing.payment_type,
+      },
+    };
 
-  if (isDirectPay) {
-    // Direct pay — full amount goes to seller subaccount immediately
-    paystackBody.subaccount = subaccount.subaccount_code;
-    paystackBody.bearer = "subaccount"; // seller bears Paystack fees
-  } else {
-    // Escrow — platform takes fee, seller gets remainder after delivery
-    paystackBody.subaccount = subaccount.subaccount_code;
-    paystackBody.transaction_charge = Math.round(platformFee * 100);
-    paystackBody.bearer = "account";
+    if (isDirectPay) {
+      paystackBody.subaccount = subaccount.subaccount_code;
+      paystackBody.bearer = "subaccount";
+    } else {
+      paystackBody.subaccount = subaccount.subaccount_code;
+      // If fee-exempt, transaction_charge is 0 — seller keeps 100%
+      paystackBody.transaction_charge = Math.round(platformFee * 100);
+      paystackBody.bearer = "account";
+    }
+
+    const result = await paystackRequest("/transaction/initialize", {
+      method: "POST",
+      body: JSON.stringify(paystackBody),
+    });
+
+    if (!result.status) {
+      throw new Error(result.message);
+    }
+
+    await supabase
+      .from("orders")
+      .update({ paystack_reference: result.data.reference })
+      .eq("id", order.id);
+
+    return { success: true, authorizationUrl: result.data.authorization_url };
+  } catch (err) {
+    await supabase.from("orders").delete().eq("id", order.id);
+    return {
+      error:
+        err instanceof Error ? err.message : "Failed to initialize payment",
+    };
   }
-
-  const result = await paystackRequest("/transaction/initialize", {
-    method: "POST",
-    body: JSON.stringify(paystackBody),
-  });
-
-  if (!result.status) {
-    throw new Error(result.message);
-  }
-
-  await supabase
-    .from("orders")
-    .update({ paystack_reference: result.data.reference })
-    .eq("id", order.id);
-
-  return { success: true, authorizationUrl: result.data.authorization_url };
-} catch (err) {
-  await supabase.from("orders").delete().eq("id", order.id);
-  return {
-    error: err instanceof Error ? err.message : "Failed to initialize payment",
-  };
-}
 }
 
 export async function verifyPayment(reference: string) {
@@ -153,7 +158,8 @@ export async function verifyPayment(reference: string) {
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Payment verification failed",
+      error:
+        err instanceof Error ? err.message : "Payment verification failed",
     };
   }
 }
@@ -219,7 +225,6 @@ export async function releaseEscrow(orderId: string) {
     return { error: "Physical order must be delivered first" };
   }
 
-  // Mark order completed
   await supabase
     .from("orders")
     .update({
@@ -228,7 +233,6 @@ export async function releaseEscrow(orderId: string) {
     })
     .eq("id", orderId);
 
-  // Mark listing sold if physical
   if (order.listing?.product_type === "physical" && order.listing_id) {
     await supabase
       .from("listings")
@@ -236,7 +240,6 @@ export async function releaseEscrow(orderId: string) {
       .eq("id", order.listing_id);
   }
 
-  // Get seller's subaccount code
   const { data: subaccount } = await adminClient
     .from("paystack_subaccounts")
     .select("subaccount_code")
@@ -246,12 +249,13 @@ export async function releaseEscrow(orderId: string) {
   if (!subaccount) {
     console.error("Seller subaccount not found for order:", orderId);
     revalidatePath("/orders");
-    return { success: true, warning: "Order completed but payout could not be initiated" };
+    return {
+      success: true,
+      warning: "Order completed but payout could not be initiated",
+    };
   }
 
-  // Initiate transfer to seller via Paystack
   try {
-    // First create a transfer recipient from the subaccount
     const recipientResult = await paystackRequest("/transferrecipient", {
       method: "POST",
       body: JSON.stringify({
@@ -262,13 +266,14 @@ export async function releaseEscrow(orderId: string) {
     });
 
     if (!recipientResult.status) {
-      throw new Error(recipientResult.message ?? "Failed to create transfer recipient");
+      throw new Error(
+        recipientResult.message ?? "Failed to create transfer recipient"
+      );
     }
 
     const recipientCode = recipientResult.data.recipient_code;
-    const transferAmount = Math.round(order.seller_amount * 100); // kobo
+    const transferAmount = Math.round(order.seller_amount * 100);
 
-    // Initiate the transfer
     const transferResult = await paystackRequest("/transfer", {
       method: "POST",
       body: JSON.stringify({
@@ -284,7 +289,6 @@ export async function releaseEscrow(orderId: string) {
       throw new Error(transferResult.message ?? "Transfer initiation failed");
     }
 
-    // Save transfer code on order
     await adminClient
       .from("orders")
       .update({
@@ -292,10 +296,12 @@ export async function releaseEscrow(orderId: string) {
       })
       .eq("id", orderId);
 
-    console.log("Transfer initiated for order:", orderId, transferResult.data.transfer_code);
+    console.log(
+      "Transfer initiated for order:",
+      orderId,
+      transferResult.data.transfer_code
+    );
   } catch (err) {
-    // Log but don't fail — order is already completed
-    // Admin can manually trigger payout from Paystack dashboard
     console.error("Payout transfer failed for order:", orderId, err);
   }
 
@@ -344,7 +350,9 @@ export async function disputeOrder(orderId: string, reason: string) {
 export async function getUserOrders() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: buying, error: buyingError } = await supabase
@@ -366,8 +374,10 @@ export async function getUserOrders() {
     .eq("seller_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (buyingError) return { error: `Buying query failed: ${buyingError.message}` };
-  if (sellingError) return { error: `Selling query failed: ${sellingError.message}` };
+  if (buyingError)
+    return { error: `Buying query failed: ${buyingError.message}` };
+  if (sellingError)
+    return { error: `Selling query failed: ${sellingError.message}` };
 
   return {
     buying: buying || [],
