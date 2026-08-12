@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { saveOnboardingIntent, skipOnboarding } from "@/lib/actions/auth";
 
 const INTENTS = [
   {
@@ -53,39 +53,17 @@ export function IntentForm({ fullName }: IntentFormProps) {
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<IntentValue | null>(null);
   const [error, setError] = useState<string>();
-  const [userId, setUserId] = useState<string | null>(null);
 
   const firstName = fullName.split(" ")[0] || "there";
 
-  // Get user ID once on mount
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id ?? null);
-    });
-  }, []);
-
   const handleSelect = (intent: (typeof INTENTS)[number]) => {
-    if (!userId) {
-      setError("Session expired. Please refresh the page.");
-      return;
-    }
-
     setSelected(intent.value);
     setError(undefined);
 
     startTransition(async () => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          onboarding_intent: intent.value,
-          onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
+      const result = await saveOnboardingIntent(intent.value);
 
-      if (error) {
+      if (result.error) {
         setError("Something went wrong. Please try again.");
         setSelected(null);
         return;
@@ -96,21 +74,8 @@ export function IntentForm({ fullName }: IntentFormProps) {
   };
 
   const handleSkip = () => {
-    if (!userId) {
-      router.push("/dashboard");
-      return;
-    }
-
     startTransition(async () => {
-      const supabase = createClient();
-      await supabase
-        .from("profiles")
-        .update({
-          onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
-
+      await skipOnboarding();
       router.push("/dashboard");
     });
   };
@@ -134,7 +99,7 @@ export function IntentForm({ fullName }: IntentFormProps) {
           <button
             key={intent.value}
             onClick={() => handleSelect(intent)}
-            disabled={isPending || !userId}
+            disabled={isPending}
             className={`w-full rounded-xl border p-4 text-left transition-all disabled:opacity-60 ${
               selected === intent.value
                 ? "border-emerald-500 bg-emerald-500/10"
