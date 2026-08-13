@@ -2,40 +2,35 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 const INTENTS = [
- {
-  value: "earn",
-  emoji: "💰",
-  label: "I want to make money",
-  description: "Sell services, take bookings, run subscriptions",
-  destination: "/creator-dashboard",
-},,
+  {
+    value: "earn",
+    emoji: "💰",
+    label: "I want to make money",
+    description: "Sell services, take bookings, run subscriptions",
+  },
   {
     value: "work",
     emoji: "💼",
     label: "I want to find a job or gig",
     description: "Browse freelance work and paid opportunities",
-    destination: "/gigs",
   },
   {
     value: "sell",
     emoji: "🛍️",
     label: "I want to sell a product",
     description: "List physical or digital products on the marketplace",
-    destination: "/marketplace/new",
   },
   {
     value: "hire",
     emoji: "🤝",
     label: "I want to hire someone",
     description: "Find talented student creators for your project",
-    destination: "/creators",
   },
   {
     value: "opportunities",
     emoji: "🎯",
     label: "I want to find opportunities",
     description: "Discover scholarships, grants, and internships",
-    destination: "/opportunities",
   },
 ] as const;
 
