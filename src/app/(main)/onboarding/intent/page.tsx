@@ -2,13 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 const INTENTS = [
-  {
-    value: "earn",
-    emoji: "💰",
-    label: "I want to make money",
-    description: "Sell services, take bookings, run subscriptions",
-    destination: "/profile/edit",
-  },
+ {
+  value: "earn",
+  emoji: "💰",
+  label: "I want to make money",
+  description: "Sell services, take bookings, run subscriptions",
+  destination: "/creator-dashboard",
+},,
   {
     value: "work",
     emoji: "💼",
@@ -42,7 +42,7 @@ const INTENTS = [
 type IntentValue = (typeof INTENTS)[number]["value"];
 
 const DESTINATIONS: Record<IntentValue, string> = {
-  earn: "/profile/edit",
+  earn: "/creator-dashboard",
   work: "/gigs",
   sell: "/marketplace/new",
   hire: "/creators",
