@@ -29,7 +29,6 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname
 
-  // Fully public — no auth needed at all
   const publicRoutes = [
     '/',
     '/login',
@@ -54,20 +53,25 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes → redirect unauthenticated users to login
-  // Preserve the original URL so they return after signing in
   if (!user && !isPublic) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', path)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Onboarding gate — logged-in users who haven't completed onboarding
+  // Onboarding gate — skip prefetch requests to avoid stale cache loop
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') === '1' ||
+    request.headers.get('purpose') === 'prefetch' ||
+    request.nextUrl.searchParams.has('_rsc')
+
   if (
-  user &&
-  !path.startsWith('/onboarding') &&
-  !path.startsWith('/auth') &&
-  !isPublic
-) {
+    user &&
+    !path.startsWith('/onboarding') &&
+    !path.startsWith('/auth') &&
+    !isPublic &&
+    !isPrefetch
+  ) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('onboarding_completed')
