@@ -45,7 +45,18 @@ export async function updateSession(request: NextRequest) {
     '/jobs',
   ]
 
+  // Routes that are valid onboarding destinations — never gate these
+  const postOnboardingDestinations = [
+    '/creator-dashboard',
+    '/dashboard',
+    '/marketplace/new',
+  ]
+
   const isPublic = publicRoutes.some(r => path === r || path.startsWith(r + '/'))
+
+  const isPostOnboardingDestination = postOnboardingDestinations.some(r =>
+    path === r || path.startsWith(r + '/')
+  )
 
   // Auth pages → redirect logged-in users to dashboard
   if (user && ['/login', '/register'].includes(path)) {
@@ -59,7 +70,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Onboarding gate — skip prefetch requests to avoid stale cache loop
+  // Skip onboarding gate for:
+  // - prefetch requests (stale cache risk)
+  // - valid post-onboarding destinations (DB write lag risk)
   const isPrefetch =
     request.headers.get('next-router-prefetch') === '1' ||
     request.headers.get('purpose') === 'prefetch' ||
@@ -70,7 +83,8 @@ export async function updateSession(request: NextRequest) {
     !path.startsWith('/onboarding') &&
     !path.startsWith('/auth') &&
     !isPublic &&
-    !isPrefetch
+    !isPrefetch &&
+    !isPostOnboardingDestination
   ) {
     const { data: profile } = await supabase
       .from('profiles')
