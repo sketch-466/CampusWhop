@@ -71,9 +71,9 @@ export async function uploadAvatar(formData: FormData) {
   }
 
   // Validate file size (2MB max)
-  if (file.size > 2 * 1024 * 1024) {
-    return { error: "File too large (max 2MB)", url: null };
-  }
+  if (file.size > 5 * 1024 * 1024) {
+  return { error: "File too large (max 5MB)", url: null };
+}
 
   const fileExt = file.name.split(".").pop() || "jpg";
   const filePath = `${user.id}/avatar.${fileExt}`;
