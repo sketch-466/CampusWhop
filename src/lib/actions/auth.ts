@@ -407,8 +407,8 @@ export async function completeOnboarding(formData: {
     return { error: "Failed to complete onboarding" };
   }
 
-  revalidatePath("/dashboard");
-  redirect("/onboarding/intent");
+  revalidatePath("/", "layout");
+redirect("/onboarding/intent");
 }
 export async function signOut() {
   const supabase = await createClient();

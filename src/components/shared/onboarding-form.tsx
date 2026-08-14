@@ -48,7 +48,7 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       fullName: defaultFullName,
-      university: NIGERIAN_UNIVERSITIES[0], // FUNAI as default
+      university: NIGERIAN_UNIVERSITIES[0],
     },
   });
 
@@ -58,24 +58,22 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
     setIsLoading(true);
     setError(undefined);
 
-    try {
-      const result = await completeOnboarding({
-        fullName: data.fullName,
-        university: data.university,
-        matricNumber: data.matricNumber,
-        phoneNumber: data.phoneNumber,
-      });
+    // Do NOT wrap in try/catch — redirect() inside server actions throws
+    // a special Next.js error that must not be caught by the client
+    const result = await completeOnboarding({
+      fullName: data.fullName,
+      university: data.university,
+      matricNumber: data.matricNumber,
+      phoneNumber: data.phoneNumber,
+    });
 
-      if (result?.error) {
-        setError(result.error);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
-    } finally {
+    // If we reach here, the action returned (no redirect happened)
+    // which means there was an error
+    if (result?.error) {
+      setError(result.error);
       setIsLoading(false);
     }
+    // If redirect() fired on the server, this code never runs
   };
 
   return (
