@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -63,11 +64,15 @@ export default async function IntentPage() {
   async function selectIntent(formData: FormData) {
     "use server";
     const intent = formData.get("intent") as IntentValue;
+
+    // Get user identity from regular client
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
-    await supabase
+    // Use admin client to bypass RLS for the update
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
       .from("profiles")
       .update({
         onboarding_intent: intent,
@@ -75,6 +80,11 @@ export default async function IntentPage() {
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id);
+
+    if (error) {
+      console.error("selectIntent update failed:", error.message);
+      redirect("/onboarding/intent");
+    }
 
     revalidatePath("/", "layout");
     const destination = DESTINATIONS[intent] ?? "/dashboard";
@@ -87,13 +97,19 @@ export default async function IntentPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
-    await supabase
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
       .from("profiles")
       .update({
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id);
+
+    if (error) {
+      console.error("skipIntent update failed:", error.message);
+      redirect("/onboarding/intent");
+    }
 
     revalidatePath("/", "layout");
     redirect("/dashboard");

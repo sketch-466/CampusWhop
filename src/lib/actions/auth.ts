@@ -57,10 +57,18 @@ export async function registerUser(formData: RegisterInput) {
 
   const userId = authData.user.id;
 
-  const { error: profileError } = await adminClient
-    .from("profiles")
-    .update({ full_name: fullName })
-    .eq("id", userId);
+  // AFTER
+const adminClient = createAdminClient();
+const { error: profileError } = await adminClient
+  .from("profiles")
+  .update({
+    full_name: formData.fullName,
+    university: formData.university,
+    matric_number: formData.matricNumber,
+    phone_number: formData.phoneNumber || null,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("id", user.id);
 
   if (profileError) {
     return { error: "Failed to update profile" };
