@@ -154,12 +154,19 @@ export function Navbar({ user }: NavbarProps) {
                     <BarChart2 className="h-4 w-4" />
                     Store Analytics
                   </Link>
-                  {user.is_admin && (
-                    <Link href="/admin/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300" onClick={() => setDropdownOpen(false)}>
-                      <Shield className="h-4 w-4" />
-                      Platform Analytics
-                    </Link>
-                  )}
+                  
+{user.is_admin && (
+  <>
+    <Link href="/admin/founders" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300" onClick={() => setDropdownOpen(false)}>
+      <Shield className="h-4 w-4" />
+      Founding Creators
+    </Link>
+    <Link href="/admin/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300" onClick={() => setDropdownOpen(false)}>
+      <Shield className="h-4 w-4" />
+      Platform Analytics
+    </Link>
+  </>
+)}
 
                   <div className="my-1 border-t border-zinc-800" />
 
