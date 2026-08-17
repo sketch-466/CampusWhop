@@ -57,18 +57,10 @@ export async function registerUser(formData: RegisterInput) {
 
   const userId = authData.user.id;
 
-  // AFTER
-const adminClient = createAdminClient();
-const { error: profileError } = await adminClient
-  .from("profiles")
-  .update({
-    full_name: formData.fullName,
-    university: formData.university,
-    matric_number: formData.matricNumber,
-    phone_number: formData.phoneNumber || null,
-    updated_at: new Date().toISOString(),
-  })
-  .eq("id", user.id);
+  const { error: profileError } = await adminClient
+    .from("profiles")
+    .update({ full_name: fullName })
+    .eq("id", userId);
 
   if (profileError) {
     return { error: "Failed to update profile" };
@@ -248,7 +240,6 @@ export async function loginUser(
     redirect("/onboarding");
   }
 
-  // Honour the original destination, but never redirect back to auth pages
   const safeRedirect =
     redirectTo.startsWith("/login") ||
     redirectTo.startsWith("/register") ||
@@ -400,7 +391,8 @@ export async function completeOnboarding(formData: {
     return { error: "Not authenticated" };
   }
 
-  const { error: profileError } = await supabase
+  const adminClient = createAdminClient();
+  const { error: profileError } = await adminClient
     .from("profiles")
     .update({
       full_name: formData.fullName,
@@ -416,8 +408,9 @@ export async function completeOnboarding(formData: {
   }
 
   revalidatePath("/", "layout");
-redirect("/onboarding/intent");
+  redirect("/onboarding/intent");
 }
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
