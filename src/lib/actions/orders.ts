@@ -46,7 +46,6 @@ export async function initializeOrder(listingId: string) {
 
   const amount = listing.price;
 
-  // Check if seller is fee-exempt (founding creator within 3-month window)
   const seller = Array.isArray(listing.seller)
     ? listing.seller[0]
     : listing.seller;
@@ -95,7 +94,6 @@ export async function initializeOrder(listingId: string) {
       paystackBody.bearer = "subaccount";
     } else {
       paystackBody.subaccount = subaccount.subaccount_code;
-      // If fee-exempt, transaction_charge is 0 — seller keeps 100%
       paystackBody.transaction_charge = Math.round(platformFee * 100);
       paystackBody.bearer = "account";
     }
@@ -164,6 +162,82 @@ export async function verifyPayment(reference: string) {
   }
 }
 
+export async function acceptOrder(orderId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("id", orderId)
+    .eq("seller_id", user.id)
+    .single();
+
+  if (!order) {
+    return { error: "Order not found" };
+  }
+
+  if (order.status !== "paid") {
+    return { error: "Order cannot be accepted" };
+  }
+
+  await supabase
+    .from("orders")
+    .update({
+      status: "accepted",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+
+  revalidatePath("/orders");
+  return { success: true };
+}
+
+export async function markOrderDelivered(orderId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("id", orderId)
+    .eq("seller_id", user.id)
+    .single();
+
+  if (!order) {
+    return { error: "Order not found" };
+  }
+
+  if (order.status !== "accepted") {
+    return { error: "Order must be accepted before marking as delivered" };
+  }
+
+  await supabase
+    .from("orders")
+    .update({
+      status: "shipped",
+      shipped_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+
+  revalidatePath("/orders");
+  return { success: true };
+}
+
 export async function confirmDelivery(orderId: string) {
   const supabase = await createClient();
 
@@ -186,7 +260,7 @@ export async function confirmDelivery(orderId: string) {
     return { error: "Order not found" };
   }
 
-  if (order.status !== "paid") {
+  if (!["paid", "shipped"].includes(order.status)) {
     return { error: "Order cannot be confirmed" };
   }
 
@@ -331,7 +405,7 @@ export async function disputeOrder(orderId: string, reason: string) {
     return { error: "Order not found" };
   }
 
-  if (!["paid", "delivered"].includes(order.status)) {
+  if (!["paid", "accepted", "shipped", "delivered"].includes(order.status)) {
     return { error: "Order cannot be disputed" };
   }
 
