@@ -196,26 +196,25 @@ export default function NewListingPage() {
 
       <h1 className="text-2xl font-bold text-white">Sell Something</h1>
 
-      {/* Progress */}
-      <div className="mt-4 flex items-center gap-2">
-        {steps.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                i <= step ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"
-              }`}
-            >
-              {i + 1}
-            </div>
-            <span className={`text-sm ${i <= step ? "text-white" : "text-zinc-500"}`}>
-              {s}
-            </span>
-            {i < steps.length - 1 && (
-              <div className={`mx-2 h-px w-8 ${i < step ? "bg-emerald-500" : "bg-zinc-800"}`} />
-            )}
-          </div>
-        ))}
-      </div>
+      {/* Progress — mobile compact */}
+<div className="mt-4 space-y-2">
+  <div className="flex items-center justify-between text-xs text-zinc-500">
+    <span className="text-emerald-400 font-medium">
+      Step {step + 1} of {steps.length} — {steps[step]}
+    </span>
+    <span>{Math.round(((step + 1) / steps.length) * 100)}%</span>
+  </div>
+  <div className="flex gap-1">
+    {steps.map((_, i) => (
+      <div
+        key={i}
+        className={`h-1 flex-1 rounded-full transition-colors ${
+          i <= step ? "bg-emerald-500" : "bg-zinc-800"
+        }`}
+      />
+    ))}
+  </div>
+</div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
         {step === 0 && (
