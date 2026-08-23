@@ -9,6 +9,7 @@ import { ArrowLeft, Package } from "lucide-react";
 import { BuyButton } from "@/components/shared/buy-button";
 import { ReputationBadge } from "@/components/shared/reputation-badge";
 import ViewTracker from "@/components/shared/view-tracker";
+import MessageButton from "@/components/shared/message-button";
 
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
@@ -41,7 +42,9 @@ export default async function ListingDetailPage({
 
   const isOwner = user?.id === rawListing.seller_id;
 
-  const seller = normalizeRelation<SellerProfile>(rawListing.seller as SellerProfile | SellerProfile[] | null) ?? {
+  const seller = normalizeRelation<SellerProfile>(
+    rawListing.seller as SellerProfile | SellerProfile[] | null
+  ) ?? {
     full_name: null,
     avatar_url: null,
     university: null,
@@ -123,7 +126,11 @@ export default async function ListingDetailPage({
             <Badge variant="default">
               {categoryLabels[rawListing.category] || rawListing.category}
             </Badge>
-            <Badge variant={rawListing.product_type === "physical" ? "outline" : "success"}>
+            <Badge
+              variant={
+                rawListing.product_type === "physical" ? "outline" : "success"
+              }
+            >
               {rawListing.product_type === "physical" ? "Physical" : "Digital"}
             </Badge>
           </div>
@@ -137,7 +144,10 @@ export default async function ListingDetailPage({
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 {seller.avatar_url && (
-                  <AvatarImage src={seller.avatar_url} alt={seller.full_name || ""} />
+                  <AvatarImage
+                    src={seller.avatar_url}
+                    alt={seller.full_name || ""}
+                  />
                 )}
                 <AvatarFallback className="text-sm">{initials}</AvatarFallback>
               </Avatar>
@@ -168,7 +178,9 @@ export default async function ListingDetailPage({
               <Package className="mt-0.5 h-4 w-4 text-zinc-500" />
               <div>
                 <p className="text-xs font-medium text-zinc-300">Delivery</p>
-                <p className="text-xs text-zinc-500">{rawListing.delivery_note}</p>
+                <p className="text-xs text-zinc-500">
+                  {rawListing.delivery_note}
+                </p>
               </div>
             </div>
           )}
@@ -186,11 +198,20 @@ export default async function ListingDetailPage({
               </Button>
             </Link>
           ) : (
-            <BuyButton
-  listingId={rawListing.id}
-  price={rawListing.price}
-  paymentType={rawListing.payment_type as "escrow" | "direct" ?? "escrow"}
-/>
+            <div className="space-y-3">
+              <BuyButton
+                listingId={rawListing.id}
+                price={rawListing.price}
+                paymentType={
+                  (rawListing.payment_type as "escrow" | "direct") ?? "escrow"
+                }
+              />
+              <MessageButton
+                otherUserId={rawListing.seller_id}
+                listingId={rawListing.id}
+                label="Message Seller"
+              />
+            </div>
           )}
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/shared/navbar";
+import OneSignalUserTag from "@/components/shared/onesignal-user-tag";
 
 export default async function MainLayout({
   children,
@@ -12,7 +13,6 @@ export default async function MainLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch profile only if logged in
   const profile = user
     ? await supabase
         .from("profiles")
@@ -25,14 +25,17 @@ export default async function MainLayout({
   return (
     <div className="min-h-screen bg-zinc-950">
       {user ? (
-        <Navbar
-          user={{
-            full_name: profile?.full_name || null,
-            avatar_url: profile?.avatar_url || null,
-            email: user.email || "",
-            is_admin: profile?.is_admin || false,
-          }}
-        />
+        <>
+          <Navbar
+            user={{
+              full_name: profile?.full_name || null,
+              avatar_url: profile?.avatar_url || null,
+              email: user.email || "",
+              is_admin: profile?.is_admin || false,
+            }}
+          />
+          <OneSignalUserTag userId={user.id} />
+        </>
       ) : (
         <PublicNavbar />
       )}

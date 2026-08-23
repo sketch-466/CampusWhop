@@ -7,8 +7,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Store, GraduationCap,
-  BarChart2, Zap, Users, Calendar,
+  BarChart2, Zap, Users, Calendar, MessageCircle,
 } from 'lucide-react'
+import MessagesNavLink from '@/components/shared/messages-nav-link'
 
 interface NavbarProps {
   user: {
@@ -59,6 +60,7 @@ export function Navbar({ user }: NavbarProps) {
               <GraduationCap className="inline h-4 w-4 mr-1" />
               Opportunities
             </Link>
+            <MessagesNavLink />
           </div>
 
           <div className="relative">
@@ -83,9 +85,22 @@ export function Navbar({ user }: NavbarProps) {
                 <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                 <div className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl max-h-[80vh] overflow-y-auto">
 
-                  <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
                     <User className="h-4 w-4" />
                     My Profile
+                  </Link>
+
+                  <Link
+                    href="/messages"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Messages
                   </Link>
 
                   <Link href="/marketplace" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
@@ -107,6 +122,10 @@ export function Navbar({ user }: NavbarProps) {
                   <Link href="/opportunities" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <GraduationCap className="h-4 w-4" />
                     Opportunities
+                  </Link>
+                  <Link href="/messages" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
+                    <MessageCircle className="h-4 w-4" />
+                    Messages
                   </Link>
 
                   <div className="my-1 border-t border-zinc-800" />
@@ -154,23 +173,35 @@ export function Navbar({ user }: NavbarProps) {
                     <BarChart2 className="h-4 w-4" />
                     Store Analytics
                   </Link>
-                  
-{user.is_admin && (
-  <>
-    <Link href="/admin/founders" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300" onClick={() => setDropdownOpen(false)}>
-      <Shield className="h-4 w-4" />
-      Founding Creators
-    </Link>
-    <Link href="/admin/analytics" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300" onClick={() => setDropdownOpen(false)}>
-      <Shield className="h-4 w-4" />
-      Platform Analytics
-    </Link>
-  </>
-)}
+
+                  {user.is_admin && (
+                    <>
+                      <Link
+                        href="/admin/founders"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <Shield className="h-4 w-4" />
+                        Founding Creators
+                      </Link>
+                      <Link
+                        href="/admin/analytics"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 transition-colors hover:bg-zinc-800 hover:text-emerald-300"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <Shield className="h-4 w-4" />
+                        Platform Analytics
+                      </Link>
+                    </>
+                  )}
 
                   <div className="my-1 border-t border-zinc-800" />
 
-                  <Link href="/profile/edit" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white" onClick={() => setDropdownOpen(false)}>
+                  <Link
+                    href="/profile/edit"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
                     <Settings className="h-4 w-4" />
                     Settings
                   </Link>

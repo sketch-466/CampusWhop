@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { confirmDelivery, disputeOrder, acceptOrder, markOrderDelivered } from "@/lib/actions/orders";
 import { markStoreOrderShipped, confirmStoreDelivery } from "@/lib/actions/orders-store";
+import MessageButton from "@/components/shared/message-button";
 
 export default function OrderActions({
   order,
@@ -20,26 +21,22 @@ export default function OrderActions({
   const isStoreOrder = !!order.store_product_id;
   const isDigital = !!order.digital_file_url;
 
-  // Seller: accept order after payment
   const showAcceptOrder =
     !isStoreOrder &&
     role === "selling" &&
     order.status === "paid";
 
-  // Seller: mark as delivered after accepting
   const showMarkDelivered =
     !isStoreOrder &&
     role === "selling" &&
     order.status === "accepted";
 
-  // Buyer: confirm delivery after seller marks delivered
   const showMarketplaceConfirmDelivery =
     !isStoreOrder &&
     role === "buying" &&
     order.status === "shipped" &&
     order.listings?.product_type === "physical";
 
-  // Buyer: confirm delivery for direct pay (paid status, no accepted step needed)
   const showDirectPayConfirm =
     !isStoreOrder &&
     role === "buying" &&
@@ -68,6 +65,10 @@ export default function OrderActions({
     role === "buying" &&
     order.status === "completed";
 
+  const showMessageButton =
+    !isStoreOrder &&
+    ["paid", "accepted", "shipped"].includes(order.status);
+
   const hasActions =
     showAcceptOrder ||
     showMarkDelivered ||
@@ -77,6 +78,7 @@ export default function OrderActions({
     showMarkShipped ||
     showStoreConfirmDelivery ||
     showDownloadLink ||
+    showMessageButton ||
     order.status === "completed" ||
     order.status === "disputed" ||
     (isStoreOrder && order.status === "shipped" && role === "selling") ||
@@ -111,7 +113,6 @@ export default function OrderActions({
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-zinc-800 px-3 py-2">
 
-      {/* Seller: accept order */}
       {showAcceptOrder && (
         <button
           onClick={() => handleAction("accept")}
@@ -122,7 +123,6 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Seller: mark as delivered */}
       {showMarkDelivered && (
         <button
           onClick={() => handleAction("deliver")}
@@ -133,7 +133,6 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Buyer: confirm delivery (escrow flow) */}
       {showMarketplaceConfirmDelivery && (
         <button
           onClick={() => handleAction("confirm")}
@@ -144,7 +143,6 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Buyer: confirm delivery (direct pay flow) */}
       {showDirectPayConfirm && (
         <button
           onClick={() => handleAction("confirm")}
@@ -155,14 +153,12 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Buyer: waiting for seller to accept */}
       {!isStoreOrder && order.status === "accepted" && role === "buying" && (
         <span className="text-xs text-blue-400">
           ⏳ Seller is sourcing your order...
         </span>
       )}
 
-      {/* Buyer: dispute */}
       {showDispute && (
         <button
           onClick={() => handleAction("dispute")}
@@ -173,7 +169,6 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Store orders */}
       {showMarkShipped && (
         <button
           onClick={() => handleAction("ship")}
@@ -201,6 +196,15 @@ export default function OrderActions({
         >
           ⬇ Download File
         </a>
+      )}
+
+      {showMessageButton && (
+        <MessageButton
+          otherUserId={role === "buying" ? order.seller_id : order.buyer_id}
+          orderId={order.id}
+          label={role === "buying" ? "Message Seller" : "Message Buyer"}
+          className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-zinc-500 hover:text-white transition-colors"
+        />
       )}
 
       {order.status === "completed" && !showDownloadLink && (
