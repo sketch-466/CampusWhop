@@ -5,8 +5,38 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CampusWhop",
-  description: "The Economic OS for Nigerian Students",
+  title: "CampusWhop — The Economic OS for Nigerian Students",
+  description:
+    "Buy, sell, find jobs, and build your business on the platform made for Nigerian university students. Safe escrow payments, verified creators, and real opportunities.",
+  metadataBase: new URL("https://campuswhop.com"),
+  openGraph: {
+    title: "CampusWhop — The Economic OS for Nigerian Students",
+    description:
+      "Buy, sell, find jobs, and build your business on the platform made for Nigerian university students. Safe escrow payments, verified creators, and real opportunities.",
+    url: "https://campuswhop.com",
+    siteName: "CampusWhop",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "CampusWhop — The Economic OS for Nigerian Students",
+      },
+    ],
+    locale: "en_NG",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CampusWhop — The Economic OS for Nigerian Students",
+    description:
+      "Buy, sell, find jobs, and build your business on the platform made for Nigerian university students.",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
