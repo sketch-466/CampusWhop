@@ -43,6 +43,7 @@ export default function NewListingPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
     trigger,
   } = useForm<ListingInput>({
@@ -53,6 +54,14 @@ export default function NewListingPage() {
   });
 
   const watched = watch();
+  const isDigital = watched.product_type === "digital";
+
+  // When product type changes, reset payment type appropriately
+  useEffect(() => {
+    if (!isDigital) {
+      setValue("payment_type", "escrow");
+    }
+  }, [isDigital, setValue]);
 
   useEffect(() => {
     async function checkSubaccount() {
@@ -268,41 +277,64 @@ export default function NewListingPage() {
             {/* Payment type selector */}
             <div className="space-y-3">
               <Label>Payment Method</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${
-                  watched.payment_type === "escrow"
-                    ? "border-emerald-500 bg-emerald-500/10"
-                    : "border-zinc-700 bg-zinc-900/50"
-                }`}>
-                  <input
-                    type="radio"
-                    value="escrow"
-                    {...register("payment_type")}
-                    className="sr-only"
-                  />
-                  <p className="text-sm font-semibold text-white">🔒 Escrow</p>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Payment held until buyer confirms delivery. Best for sellers with stock in hand.
-                  </p>
-                </label>
 
-                <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${
-                  watched.payment_type === "direct"
-                    ? "border-amber-500 bg-amber-500/10"
-                    : "border-zinc-700 bg-zinc-900/50"
-                }`}>
+              {/* Physical: escrow only */}
+              {!isDigital && (
+                <div className="rounded-xl border border-emerald-500 bg-emerald-500/10 p-4">
                   <input
-                    type="radio"
-                    value="direct"
+                    type="hidden"
                     {...register("payment_type")}
-                    className="sr-only"
+                    value="escrow"
                   />
-                  <p className="text-sm font-semibold text-white">⚡ Direct Pay</p>
+                  <p className="text-sm font-semibold text-white">🔒 Escrow (Required for Physical)</p>
                   <p className="text-xs text-zinc-400 mt-1">
-                    Payment sent immediately upon purchase. Best for middlemen and dropshippers.
+                    Buyer pays into escrow. You accept the order, source the
+                    item, and deliver it. Funds are released to you once the
+                    buyer confirms receipt. Protects both parties.
                   </p>
-                </label>
-              </div>
+                </div>
+              )}
+
+              {/* Digital: show both options */}
+              {isDigital && (
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${
+                    watched.payment_type === "escrow"
+                      ? "border-emerald-500 bg-emerald-500/10"
+                      : "border-zinc-700 bg-zinc-900/50"
+                  }`}>
+                    <input
+                      type="radio"
+                      value="escrow"
+                      {...register("payment_type")}
+                      className="sr-only"
+                    />
+                    <p className="text-sm font-semibold text-white">🔒 Escrow</p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Payment held and released automatically after file is
+                      delivered to buyer.
+                    </p>
+                  </label>
+
+                  <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${
+                    watched.payment_type === "direct"
+                      ? "border-amber-500 bg-amber-500/10"
+                      : "border-zinc-700 bg-zinc-900/50"
+                  }`}>
+                    <input
+                      type="radio"
+                      value="direct"
+                      {...register("payment_type")}
+                      className="sr-only"
+                    />
+                    <p className="text-sm font-semibold text-white">⚡ Direct Pay</p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Payment sent directly to you on purchase. Best for
+                      digital downloads and instant delivery.
+                    </p>
+                  </label>
+                </div>
+              )}
             </div>
           </>
         )}
