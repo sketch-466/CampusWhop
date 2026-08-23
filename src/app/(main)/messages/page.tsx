@@ -20,7 +20,7 @@ export default async function MessagesPage() {
       </div>
 
       <ConversationList
-        conversations={conversations ?? []}
+        conversations={(conversations ?? []) as any}
         currentUserId={currentUserId ?? ""}
       />
     </div>
