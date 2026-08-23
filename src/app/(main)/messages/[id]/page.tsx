@@ -22,8 +22,8 @@ export default async function ConversationPage({
   return (
     <ChatView
       conversationId={id}
-      initialMessages={messages ?? []}
-      conversation={conversation}
+      initialMessages={(messages ?? []) as any}
+      conversation={conversation as any}
       currentUserId={currentUserId ?? ""}
     />
   );
