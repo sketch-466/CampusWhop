@@ -5,7 +5,6 @@ import { listingSchema, type ListingInput } from "@/lib/validations/listing";
 import { revalidatePath } from "next/cache";
 import { uploadToB2, generateFileName } from "@/lib/storage/b2";
 
-// Helper to normalize Supabase joined relation
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
   if (Array.isArray(rel)) return rel[0] ?? null;
@@ -21,7 +20,11 @@ interface SellerProfile {
   is_founding_creator: boolean | null;
 }
 
-export async function createListing(data: ListingInput, images: string[]) {
+export async function createListing(
+  data: ListingInput,
+  images: string[],
+  digitalFileUrl?: string
+) {
   const validated = listingSchema.safeParse(data);
   if (!validated.success) {
     return { error: validated.error.errors[0].message };
@@ -37,22 +40,28 @@ export async function createListing(data: ListingInput, images: string[]) {
     return { error: "Not authenticated" };
   }
 
+  // Digital listings must have a file
+  if (validated.data.product_type === "digital" && !digitalFileUrl) {
+    return { error: "Please upload a file for your digital product" };
+  }
+
   const { data: listing, error } = await supabase
-  .from("listings")
-  .insert({
-    seller_id: user.id,
-    title: validated.data.title,
-    description: validated.data.description,
-    price: validated.data.price,
-    product_type: validated.data.product_type,
-    category: validated.data.category,
-    delivery_note: validated.data.delivery_note || null,
-    payment_type: validated.data.payment_type ?? "escrow",
-    images,
-    status: "pending",
-  })
-  .select()
-  .single();
+    .from("listings")
+    .insert({
+      seller_id: user.id,
+      title: validated.data.title,
+      description: validated.data.description,
+      price: validated.data.price,
+      product_type: validated.data.product_type,
+      category: validated.data.category,
+      delivery_note: validated.data.delivery_note || null,
+      payment_type: validated.data.payment_type ?? "escrow",
+      images,
+      digital_file_url: digitalFileUrl ?? null,
+      status: "pending",
+    })
+    .select()
+    .single();
 
   if (error) {
     return { error: "Failed to create listing" };
@@ -99,6 +108,43 @@ export async function uploadListingImage(formData: FormData) {
     url = await uploadToB2(buffer, fileName, "listings", file.type);
   } catch {
     return { error: "Failed to upload image" };
+  }
+
+  return { success: true, url };
+}
+
+export async function uploadDigitalFile(formData: FormData) {
+  const file = formData.get("file") as File;
+
+  if (!file) {
+    return { error: "No file provided" };
+  }
+
+  // Max 100MB for digital files
+  const maxSize = 100 * 1024 * 1024;
+  if (file.size > maxSize) {
+    return { error: "File must be less than 100MB" };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const fileName = `${user.id}-${generateFileName(file.name)}`;
+
+  let url: string;
+  try {
+    url = await uploadToB2(buffer, fileName, "listings", file.type);
+  } catch {
+    return { error: "Failed to upload file" };
   }
 
   return { success: true, url };
@@ -186,7 +232,9 @@ export async function getListingById(id: string) {
 
   const listing = {
     ...data,
-    seller: normalizeRelation<SellerProfile>(data.seller as SellerProfile | SellerProfile[] | null),
+    seller: normalizeRelation<SellerProfile>(
+      data.seller as SellerProfile | SellerProfile[] | null
+    ),
   };
 
   return { listing };
