@@ -7,12 +7,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "CampusWhop — The Economic OS for Nigerian Students",
   description:
-    "Buy, sell, find jobs, and build your business on the platform made for Nigerian university students. Safe escrow payments, verified creators, and real opportunities.",
+    "Buy, sell, find jobs and build your business. Safe escrow payments for Nigerian university students.",
   metadataBase: new URL("https://campuswhop.com"),
   openGraph: {
     title: "CampusWhop — The Economic OS for Nigerian Students",
-    description:
-      "Buy, sell, find jobs, and build your business on the platform made for Nigerian university students. Safe escrow payments, verified creators, and real opportunities.",
+    description: "Buy, sell, find jobs and build your business. Safe escrow payments for Nigerian university students.",
     url: "https://campuswhop.com",
     siteName: "CampusWhop",
     images: [
