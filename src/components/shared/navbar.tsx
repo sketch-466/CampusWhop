@@ -102,6 +102,15 @@ export function Navbar({ user }: NavbarProps) {
                     <MessageCircle className="h-4 w-4" />
                     Messages
                   </Link>
+                  <Link
+  href="/referrals"
+  className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+  onClick={() => setDropdownOpen(false)}
+>
+  <Gift className="h-4 w-4" />
+  Refer & Earn
+</Link>
+
 
                   <Link href="/marketplace" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <ShoppingBag className="h-4 w-4" />

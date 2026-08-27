@@ -32,7 +32,10 @@ function getExpiration(hours: number): string {
   return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
 
-export async function registerUser(formData: RegisterInput) {
+export async function registerUser(
+  formData: RegisterInput,
+  referralCode?: string
+) {
   const validated = registerSchema.safeParse(formData);
   if (!validated.success) {
     return { error: validated.error.errors[0].message };
@@ -79,6 +82,16 @@ export async function registerUser(formData: RegisterInput) {
 
   if (tokenError) {
     return { error: "Failed to generate verification token" };
+  }
+
+  // Track referral if code provided
+  if (referralCode) {
+    try {
+      const { trackReferral } = await import("@/lib/actions/referrals");
+      await trackReferral(referralCode, userId);
+    } catch {
+      // Silently fail — don't block registration if referral tracking fails
+    }
   }
 
   const verifyUrl = `${SITE_URL}/verify?token=${token}`;

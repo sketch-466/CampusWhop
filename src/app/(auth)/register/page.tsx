@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,16 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState<string>();
+  const [referralCode, setReferralCode] = useState<string>("");
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      setReferralCode(ref.toUpperCase());
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -37,7 +48,7 @@ export default function RegisterPage() {
     setError(undefined);
     setSuccess(undefined);
 
-    const result = await registerUser(data);
+    const result = await registerUser(data, referralCode || undefined);
 
     if (result.error) {
       setError(result.error);
@@ -81,6 +92,18 @@ export default function RegisterPage() {
               </div>
             ) : (
               <>
+                {/* Referral badge */}
+                {referralCode && (
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
+                    <p className="text-xs text-emerald-400 font-medium">
+                      🎉 You were referred by a friend! Sign up to get started.
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Referral code: <span className="text-zinc-300 font-mono">{referralCode}</span>
+                    </p>
+                  </div>
+                )}
+
                 <form
                   onSubmit={handleSubmit(onSubmit)}
                   className="space-y-4"
