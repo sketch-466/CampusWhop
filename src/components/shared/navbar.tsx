@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Store, GraduationCap,
-  BarChart2, Zap, Users, Calendar, MessageCircle,
+  BarChart2, Zap, Users, Calendar, MessageCircle, Gift,
 } from 'lucide-react'
 import MessagesNavLink from '@/components/shared/messages-nav-link'
 
