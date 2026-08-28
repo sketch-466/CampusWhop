@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -23,6 +24,52 @@ interface SellerProfile {
   university: string | null;
   reputation_score: number | null;
   total_reviews: number | null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { listing, error } = await getListingById(id);
+
+  if (error || !listing) {
+    return {
+      title: "Listing Not Found — CampusWhop",
+    };
+  }
+
+  const image = (listing.images as string[])?.[0];
+  const seller = normalizeRelation<SellerProfile>(
+    listing.seller as SellerProfile | SellerProfile[] | null
+  );
+
+  const title = `${listing.title} — ₦${listing.price.toLocaleString()} | CampusWhop`;
+  const description = `${
+    listing.description?.slice(0, 120) ?? "Check out this listing on CampusWhop"
+  }... Sold by ${seller?.full_name ?? "a FUNAI student"}.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://campuswhop.com/marketplace/${id}`,
+      siteName: "CampusWhop",
+      images: image
+        ? [{ url: image, width: 800, height: 800, alt: listing.title }]
+        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: image ? [image] : ["/og-image.png"],
+    },
+  };
 }
 
 export default async function ListingDetailPage({
