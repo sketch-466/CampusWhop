@@ -63,13 +63,13 @@ export function ListingCard({ listing, referralCode }: ListingCardProps) {
   return (
     <div className="relative group">
       {/* Share button — sits outside the Link */}
-      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <ShareButton
-          listingId={listing.id}
-          title={listing.title}
-          referralCode={referralCode}
-        />
-      </div>
+       <div className="absolute top-2 left-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+  <ShareButton
+    listingId={listing.id}
+    title={listing.title}
+    referralCode={referralCode}
+  />
+</div>
 
       <Link
         href={`/marketplace/${listing.id}`}
