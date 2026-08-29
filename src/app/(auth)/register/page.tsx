@@ -20,6 +20,8 @@ import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
 import { registerUser } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
