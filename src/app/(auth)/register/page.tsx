@@ -48,13 +48,13 @@ function RegisterForm() {
     setError(undefined);
     setSuccess(undefined);
 
-    const result = await registerUser(data, referralCode || undefined);
+   const result = await registerUser(data, referralCode || undefined);
 
-    if (result.error) {
-      setError(result.error);
-    } else if (result.success) {
-      setSuccess(result.message);
-    }
+if (result?.error) {
+  setError(typeof result.error === "string" ? result.error : "Something went wrong. Please try again.");
+} else if (result?.success) {
+  setSuccess(result.message ?? "Check your email for a verification link.");
+}
 
     setIsLoading(false);
   };
@@ -162,8 +162,10 @@ function RegisterForm() {
               </div>
 
               {error && (
-                <p className="text-sm text-destructive text-center">{error}</p>
-              )}
+  <p className="text-sm text-destructive text-center">
+    {typeof error === "string" ? error : "An error occurred. Please try again."}
+  </p>
+)}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Create Account"}
