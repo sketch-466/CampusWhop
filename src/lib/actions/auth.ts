@@ -55,10 +55,25 @@ export async function registerUser(
   });
 
   if (authError || !authData.user) {
-    return { error: authError?.message || "Failed to create account" };
+    const message =
+      typeof authError?.message === "string"
+        ? authError.message
+        : "Failed to create account";
+    return { error: message };
+  }
+
+  // Supabase returns a ghost user with empty identities for duplicate emails
+  if (authData.user.identities && authData.user.identities.length === 0) {
+    return {
+      error: "An account with this email already exists. Please sign in instead.",
+    };
   }
 
   const userId = authData.user.id;
+
+  // Sign out immediately — user must verify email before logging in
+  // This prevents middleware from auto-redirecting away from the success screen
+  await supabase.auth.signOut();
 
   const { error: profileError } = await adminClient
     .from("profiles")
