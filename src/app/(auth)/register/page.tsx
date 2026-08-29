@@ -46,20 +46,44 @@ function RegisterForm() {
   });
 
   const onSubmit = async (data: RegisterInput) => {
-    setIsLoading(true);
-    setError(undefined);
-    setSuccess(undefined);
+  setIsLoading(true);
+  setError(undefined);
+  setSuccess(undefined);
 
-   const result = await registerUser(data, referralCode || undefined);
+  try {
+    const result = await registerUser(data, referralCode || undefined);
 
-if (result?.error) {
-  setError(typeof result.error === "string" ? result.error : "Something went wrong. Please try again.");
-} else if (result?.success) {
-  setSuccess(result.message ?? "Check your email for a verification link.");
-}
+    if (!result) {
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
+      return;
+    }
 
+    if (result.error) {
+      setError(
+        typeof result.error === "string"
+          ? result.error
+          : "Something went wrong. Please try again."
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    if (result.success) {
+      setSuccess(result.message ?? "Check your email for a verification link.");
+      setIsLoading(false);
+      return;
+    }
+
+    setError("Unexpected response. Please try again.");
     setIsLoading(false);
-  };
+  } catch (err) {
+    // Server actions that call redirect() throw — but registerUser shouldn't
+    // If we get here something unexpected happened
+    setError("Something went wrong. Please try again.");
+    setIsLoading(false);
+  }
+};
 
   return (
     <Card>
