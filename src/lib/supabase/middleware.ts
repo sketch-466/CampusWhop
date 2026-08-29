@@ -43,6 +43,8 @@ export async function updateSession(request: NextRequest) {
     '/store',
     '/opportunities',
     '/jobs',
+    '/novels',
+'/coins',
   ]
 
   // Routes that are valid onboarding destinations — never gate these

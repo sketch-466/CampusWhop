@@ -8,8 +8,10 @@ import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Store, GraduationCap,
   BarChart2, Zap, Users, Calendar, MessageCircle, Gift,
+  BookOpen, Coins,
 } from 'lucide-react'
 import MessagesNavLink from '@/components/shared/messages-nav-link'
+import CoinBalance from '@/components/shared/coin-balance'
 
 interface NavbarProps {
   user: {
@@ -60,7 +62,12 @@ export function Navbar({ user }: NavbarProps) {
               <GraduationCap className="inline h-4 w-4 mr-1" />
               Opportunities
             </Link>
+            <Link href="/novels" className="text-sm text-zinc-400 transition-colors hover:text-white">
+              <BookOpen className="inline h-4 w-4 mr-1" />
+              Novels
+            </Link>
             <MessagesNavLink />
+            <CoinBalance />
           </div>
 
           <div className="relative">
@@ -102,16 +109,35 @@ export function Navbar({ user }: NavbarProps) {
                     <MessageCircle className="h-4 w-4" />
                     Messages
                   </Link>
+
                   <Link
-  href="/referrals"
-  className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-  onClick={() => setDropdownOpen(false)}
->
-  <Gift className="h-4 w-4" />
-  Refer & Earn
-</Link>
+                    href="/referrals"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Gift className="h-4 w-4" />
+                    Refer & Earn
+                  </Link>
 
+                  <Link
+                    href="/novels"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Novels
+                  </Link>
 
+                  <Link
+                    href="/coins"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Coins className="h-4 w-4" />
+                    My Coins
+                  </Link>
+
+                  {/* Mobile-only nav links */}
                   <Link href="/marketplace" className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white sm:hidden" onClick={() => setDropdownOpen(false)}>
                     <ShoppingBag className="h-4 w-4" />
                     Products
