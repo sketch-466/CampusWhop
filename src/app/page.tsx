@@ -10,7 +10,43 @@ import {
   Zap,
   BookOpen,
   TrendingUp,
+  ChevronDown,
 } from "lucide-react";
+
+const FAQS = [
+  {
+    q: "Is my payment safe?",
+    a: "Yes. Every marketplace transaction goes through escrow — your money is held securely and only released to the seller after you confirm you've received your item. You're never paying blind.",
+  },
+  {
+    q: "How does escrow work?",
+    a: "When you buy something, your payment is held by CampusWhop. The seller is notified, sources or delivers the item, and you confirm receipt. Only then does the seller get paid. If something goes wrong, you can raise a dispute and our team steps in.",
+  },
+  {
+    q: "When do sellers get paid?",
+    a: "Sellers receive their payment within 1 business day after the buyer confirms delivery. For digital products, payment is released automatically after the file is delivered.",
+  },
+  {
+    q: "What if I don't receive my item?",
+    a: "You can raise a dispute directly from your orders page. Our admin team reviews disputes and can refund your payment if the seller fails to deliver. This is why escrow exists — it protects buyers.",
+  },
+  {
+    q: "Who can sell on CampusWhop?",
+    a: "Any FUNAI student can sell on CampusWhop. You'll need to set up a payout account with your bank details so we can send you money when your items sell. It takes about 5 minutes.",
+  },
+  {
+    q: "What can I sell?",
+    a: "Physical items like phones, laptops, books, and gadgets. Digital products like notes, templates, ebooks, and design files. Services via the booking system. Content via subscriptions. And novels via our built-in publishing platform.",
+  },
+  {
+    q: "How do coins work?",
+    a: "Coins are used to unlock premium chapters in novels. You buy a coin bundle once via Paystack, and use those coins to unlock chapters instantly. One unlock is permanent — you pay once and can re-read anytime.",
+  },
+  {
+    q: "Is CampusWhop free to use?",
+    a: "Free to join and browse. CampusWhop takes a 10% platform fee on completed marketplace transactions. Founding creators get a 3-month fee exemption. There are no monthly fees or subscriptions to use the platform.",
+  },
+];
 
 export default function HomePage() {
   return (
@@ -47,11 +83,13 @@ export default function HomePage() {
           </div>
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
             Where FUNAI Students
-<br />
-<span className="text-emerald-500">Make Money</span>
+            <br />
+            <span className="text-emerald-500">Make Money</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl">
-            Sell your skills, products, and services to fellow students. Get paid safely with escrow. Build a reputation that follows you beyond campus.
+            Sell your skills, products, and services to fellow students. Get
+            paid safely with escrow. Build a reputation that follows you beyond
+            campus.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
@@ -88,7 +126,9 @@ export default function HomePage() {
               className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3"
             >
               <span className="text-lg">{stat.icon}</span>
-              <span className="text-xs font-medium text-zinc-300">{stat.label}</span>
+              <span className="text-xs font-medium text-zinc-300">
+                {stat.label}
+              </span>
             </div>
           ))}
         </div>
@@ -101,7 +141,8 @@ export default function HomePage() {
             Every tool a student entrepreneur needs
           </h2>
           <p className="mt-3 text-zinc-400">
-            Built specifically for Nigerian university students who want to make money.
+            Built specifically for Nigerian university students who want to make
+            money.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,12 +225,41 @@ export default function HomePage() {
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { emoji: "🎨", type: "Designers", action: "Sell design packages, take bookings, run a monthly retainer" },
-            { emoji: "📚", type: "Tutors", action: "Offer fixed time slots, charge per session, build a subscriber base" },
-            { emoji: "📸", type: "Photographers", action: "Post your portfolio, accept bookings, get paid upfront" },
-            { emoji: "💻", type: "Developers", action: "Offer consultation calls, sell templates, take project requests" },
-            { emoji: "✍️", type: "Writers", action: "Sell articles, offer content subscriptions, take writing gigs" },
-            { emoji: "🎵", type: "Musicians", action: "Sell beats, offer lessons, run a monthly content subscription" },
+            {
+              emoji: "🎨",
+              type: "Designers",
+              action:
+                "Sell design packages, take bookings, run a monthly retainer",
+            },
+            {
+              emoji: "📚",
+              type: "Tutors",
+              action:
+                "Offer fixed time slots, charge per session, build a subscriber base",
+            },
+            {
+              emoji: "📸",
+              type: "Photographers",
+              action: "Post your portfolio, accept bookings, get paid upfront",
+            },
+            {
+              emoji: "💻",
+              type: "Developers",
+              action:
+                "Offer consultation calls, sell templates, take project requests",
+            },
+            {
+              emoji: "✍️",
+              type: "Writers",
+              action:
+                "Sell articles, offer content subscriptions, take writing gigs",
+            },
+            {
+              emoji: "🎵",
+              type: "Musicians",
+              action:
+                "Sell beats, offer lessons, run a monthly content subscription",
+            },
           ].map((item) => (
             <div
               key={item.type}
@@ -213,17 +283,20 @@ export default function HomePage() {
             {
               step: "1",
               title: "Create your account",
-              description: "Sign up with your university email or Google. Takes under 2 minutes.",
+              description:
+                "Sign up with your university email or Google. Takes under 2 minutes.",
             },
             {
               step: "2",
               title: "Set up your creator profile",
-              description: "Add your skills, tagline, and what you offer. Get discovered immediately.",
+              description:
+                "Add your skills, tagline, and what you offer. Get discovered immediately.",
             },
             {
               step: "3",
               title: "Start earning",
-              description: "Post a listing, create a booking service, or launch a subscription plan.",
+              description:
+                "Post a listing, create a booking service, or launch a subscription plan.",
             },
           ].map((item) => (
             <div key={item.step} className="flex gap-4">
@@ -231,31 +304,68 @@ export default function HomePage() {
                 {item.step}
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">{item.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-zinc-400">{item.description}</p>
+                <h3 className="text-base font-semibold text-white">
+                  {item.title}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+                  {item.description}
+                </p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
+      {/* Founding member banner */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
-  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 px-6 py-12 text-center sm:px-12">
-    <h2 className="text-2xl font-bold text-white sm:text-3xl">
-      Just getting started — and that&apos;s the point.
-    </h2>
-    <p className="mx-auto mt-4 max-w-xl text-zinc-400 leading-relaxed">
-      CampusWhop is launching now at FUNAI. The first students to join will be the ones who shape what this becomes. No fake reviews. No inflated numbers. Just a platform built for you, launching with you.
-    </p>
-    <Link
-      href="/register"
-      className="mt-8 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-emerald-600"
-    >
-      Join as a Founding Member
-      <ArrowRight className="h-4 w-4" />
-    </Link>
-  </div>
-</section>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 px-6 py-12 text-center sm:px-12">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Just getting started — and that&apos;s the point.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-zinc-400 leading-relaxed">
+            CampusWhop is launching now at FUNAI. The first students to join
+            will be the ones who shape what this becomes. No fake reviews. No
+            inflated numbers. Just a platform built for you, launching with you.
+          </p>
+          <Link
+            href="/register"
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-emerald-600"
+          >
+            Join as a Founding Member
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mx-auto max-w-3xl px-4 pb-16 sm:pb-20">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Frequently asked questions
+          </h2>
+          <p className="mt-3 text-zinc-400">
+            Everything you need to know before getting started.
+          </p>
+        </div>
+        <div className="space-y-3">
+          {FAQS.map((faq, i) => (
+            <details
+              key={i}
+              className="group rounded-xl border border-zinc-800 bg-zinc-900/30 px-5 py-4 open:border-zinc-700 open:bg-zinc-900/60 transition-colors"
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-4 list-none">
+                <span className="text-sm font-semibold text-white">
+                  {faq.q}
+                </span>
+                <ChevronDown className="h-4 w-4 flex-shrink-0 text-zinc-500 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                {faq.a}
+              </p>
+            </details>
+          ))}
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
@@ -264,7 +374,8 @@ export default function HomePage() {
             Your campus business starts today
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-zinc-300">
-            Join FUNAI students already selling, booking, and earning on CampusWhop.
+            Join FUNAI students already selling, booking, and earning on
+            CampusWhop.
           </p>
           <Link
             href="/register"
@@ -273,7 +384,9 @@ export default function HomePage() {
             Get Started Free
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <p className="mt-4 text-xs text-zinc-500">Free forever for students · No credit card needed</p>
+          <p className="mt-4 text-xs text-zinc-500">
+            Free forever for students · No credit card needed
+          </p>
         </div>
       </section>
 
@@ -292,11 +405,31 @@ export default function HomePage() {
             <div>
               <h4 className="text-sm font-semibold text-zinc-300">Platform</h4>
               <ul className="mt-3 space-y-2 text-sm text-zinc-500">
-                <li><Link href="/marketplace" className="hover:text-zinc-300">Marketplace</Link></li>
-                <li><Link href="/creators" className="hover:text-zinc-300">Creators</Link></li>
-                <li><Link href="/store" className="hover:text-zinc-300">Stores</Link></li>
-                <li><Link href="/gigs" className="hover:text-zinc-300">Gigs</Link></li>
-                <li><Link href="/opportunities" className="hover:text-zinc-300">Opportunities</Link></li>
+                <li>
+                  <Link href="/marketplace" className="hover:text-zinc-300">
+                    Marketplace
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/creators" className="hover:text-zinc-300">
+                    Creators
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/store" className="hover:text-zinc-300">
+                    Stores
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/gigs" className="hover:text-zinc-300">
+                    Gigs
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/opportunities" className="hover:text-zinc-300">
+                    Opportunities
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
