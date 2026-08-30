@@ -40,7 +40,6 @@ export default async function CreatorsPage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Creators</h1>
         <p className="mt-1 text-sm text-zinc-400">
@@ -48,7 +47,6 @@ export default async function CreatorsPage({
         </p>
       </div>
 
-      {/* Filter tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
         <Link
           href="/creators"
@@ -75,7 +73,6 @@ export default async function CreatorsPage({
         ))}
       </div>
 
-      {/* Grid */}
       {creators && creators.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {creators.map((creator) => {
@@ -98,7 +95,6 @@ export default async function CreatorsPage({
                 href={`/creators/${creator.id}`}
                 className="group flex flex-col rounded-xl border border-zinc-800 bg-zinc-900/30 p-5 transition-colors hover:border-zinc-600 hover:bg-zinc-900/60"
               >
-                {/* Avatar + name row */}
                 <div className="flex items-start gap-3">
                   <Avatar className="h-12 w-12 shrink-0">
                     {creator.avatar_url && (
@@ -124,14 +120,12 @@ export default async function CreatorsPage({
                   </div>
                 </div>
 
-                {/* Tagline */}
                 {creator.tagline && (
                   <p className="mt-3 text-sm text-zinc-400 line-clamp-2">
                     {creator.tagline}
                   </p>
                 )}
 
-                {/* Skills */}
                 {skills.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {skills.slice(0, 4).map((skill) => (
@@ -150,7 +144,6 @@ export default async function CreatorsPage({
                   </div>
                 )}
 
-                {/* Footer row */}
                 <div className="mt-4 flex items-center justify-between border-t border-zinc-800 pt-3">
                   <div className="flex items-center gap-1 text-xs text-zinc-500">
                     <Users className="h-3.5 w-3.5" />
@@ -159,45 +152,37 @@ export default async function CreatorsPage({
                   </div>
                   <div className="flex items-center gap-2">
                     {creator.portfolio_url && (
-                      <span
-                        onClick={(e) => e.preventDefault()}
+                      <a
+                        href={creator.portfolio_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-zinc-500 hover:text-emerald-400 transition-colors"
+                        title="Portfolio"
                       >
-                        <a
-                          href={creator.portfolio_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                          title="Portfolio"
-                        >
-                          <Globe className="h-4 w-4" />
-                        </a>
-                      </span>
+                        <Globe className="h-4 w-4" />
+                      </a>
                     )}
                     {creator.twitter_url && (
-                      <span onClick={(e) => e.preventDefault()}>
-                        <a
-                          href={creator.twitter_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                          title="Twitter"
-                        >
-                          <Twitter className="h-4 w-4" />
-                        </a>
-                      </span>
+                      <a
+                        href={creator.twitter_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-zinc-500 hover:text-emerald-400 transition-colors"
+                        title="Twitter"
+                      >
+                        <Twitter className="h-4 w-4" />
+                      </a>
                     )}
                     {creator.linkedin_url && (
-                      <span onClick={(e) => e.preventDefault()}>
-                        <a
-                          href={creator.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-500 hover:text-emerald-400 transition-colors"
-                          title="LinkedIn"
-                        >
-                          <Linkedin className="h-4 w-4" />
-                        </a>
-                      </span>
+                      <a
+                        href={creator.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-zinc-500 hover:text-emerald-400 transition-colors"
+                        title="LinkedIn"
+                      >
+                        <Linkedin className="h-4 w-4" />
+                      </a>
                     )}
                   </div>
                 </div>
@@ -215,7 +200,10 @@ export default async function CreatorsPage({
           </p>
           <p className="mt-1 text-xs text-zinc-600">
             Be the first —{" "}
-            <Link href="/profile/edit" className="text-emerald-400 hover:underline">
+            <Link
+              href="/profile/edit"
+              className="text-emerald-400 hover:underline"
+            >
               set up your creator profile
             </Link>
             .
