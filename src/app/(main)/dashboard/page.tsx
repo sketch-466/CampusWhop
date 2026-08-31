@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   ShoppingBag, Store, GraduationCap, Plus, Shield,
-  Users, Calendar, Zap,
+  Users, Calendar, Zap, Wallet,
 } from 'lucide-react'
 import { ReputationBadge } from '@/components/shared/reputation-badge'
+import PulseFeed from '@/components/shared/pulse-feed'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -20,8 +21,6 @@ export default async function DashboardPage() {
     .single()
 
   if (!profile?.onboarding_completed) redirect('/onboarding')
-
-  // Creators get their own dashboard
   if (profile.creator_type) redirect('/creator-dashboard')
 
   const [
@@ -29,6 +28,7 @@ export default async function DashboardPage() {
     { count: ordersCount },
     { count: activeSubsCount },
     { data: upcomingBookings },
+    { data: wallet },
   ] = await Promise.all([
     supabase
       .from('paystack_subaccounts')
@@ -51,6 +51,11 @@ export default async function DashboardPage() {
       .eq('status', 'confirmed')
       .order('created_at', { ascending: false })
       .limit(3),
+    supabase
+      .from('coin_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle(),
   ])
 
   const initials = profile.full_name
@@ -108,9 +113,7 @@ export default async function DashboardPage() {
           </Avatar>
           <div>
             <h2 className="font-semibold text-white">{profile.full_name || 'Student'}</h2>
-            <p className="text-xs text-zinc-500">
-              {profile.university || 'No university'}
-            </p>
+            <p className="text-xs text-zinc-500">{profile.university || 'No university'}</p>
             <div className="mt-0.5">
               <ReputationBadge
                 score={profile.reputation_score || 0}
@@ -143,6 +146,28 @@ export default async function DashboardPage() {
           <p className="text-xs text-zinc-500">Reputation</p>
         </div>
       </div>
+
+      {/* Wallet Card */}
+      <Link
+        href="/coins"
+        className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 hover:bg-amber-500/10 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20">
+            <Wallet className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Coin Wallet</p>
+            <p className="text-xs text-zinc-500">Use coins to unlock novel chapters</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold text-amber-400">
+            {(wallet?.balance ?? 0).toLocaleString()}
+          </p>
+          <p className="text-xs text-zinc-600">coins</p>
+        </div>
+      </Link>
 
       {/* Upcoming Sessions */}
       {upcomingBookings && upcomingBookings.length > 0 && (
@@ -180,6 +205,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Pulse Feed */}
+      <PulseFeed />
 
       {/* Quick Actions */}
       <div>

@@ -5,10 +5,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   Shield, BadgeCheck, TrendingUp, Calendar,
   ShoppingBag, Store, Zap, Plus, BarChart2,
-  Users, Star,
+  Users, Star, Wallet,
 } from 'lucide-react'
 import { ReputationBadge } from '@/components/shared/reputation-badge'
 import { CREATOR_TYPE_LABELS, type CreatorType } from '@/lib/validations/profile'
+import PulseFeed from '@/components/shared/pulse-feed'
 
 export default async function CreatorDashboardPage() {
   const supabase = await createClient()
@@ -22,8 +23,6 @@ export default async function CreatorDashboardPage() {
     .single()
 
   if (!profile?.onboarding_completed) redirect('/onboarding')
-
-  // Non-creators go back to student dashboard
   if (!profile.creator_type) redirect('/dashboard')
 
   const [
@@ -35,6 +34,7 @@ export default async function CreatorDashboardPage() {
     { data: activeSubscribers },
     { data: subscriptionRevenue },
     { count: storeProductCount },
+    { data: wallet },
   ] = await Promise.all([
     supabase
       .from('paystack_subaccounts')
@@ -54,9 +54,7 @@ export default async function CreatorDashboardPage() {
     supabase
       .from('bookings')
       .select(`
-        id,
-        amount,
-        proposed_time,
+        id, amount, proposed_time,
         booking_services(title),
         booking_slots(starts_at),
         buyer:profiles!bookings_buyer_id_fkey(full_name, avatar_url)
@@ -68,9 +66,7 @@ export default async function CreatorDashboardPage() {
     supabase
       .from('bookings')
       .select(`
-        id,
-        amount,
-        proposed_time,
+        id, amount, proposed_time,
         booking_services(title),
         booking_slots(starts_at),
         buyer:profiles!bookings_buyer_id_fkey(full_name)
@@ -96,6 +92,11 @@ export default async function CreatorDashboardPage() {
       .select('*', { count: 'exact', head: true })
       .eq('is_deleted', false)
       .not('store_id', 'is', null),
+    supabase
+      .from('coin_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle(),
   ])
 
   const totalEarnings = (earningsData ?? []).reduce(
@@ -113,15 +114,15 @@ export default async function CreatorDashboardPage() {
   const creatorLabel = CREATOR_TYPE_LABELS[profile.creator_type as CreatorType]
 
   const adminLinks = [
-  { label: 'Listings', href: '/admin/listings' },
-  { label: 'Gigs', href: '/admin/jobs' },
-  { label: 'Stores', href: '/admin/stores' },
-  { label: 'Disputes', href: '/admin/disputes' },
-  { label: 'Bookings', href: '/admin/bookings' },
-  { label: 'Subscriptions', href: '/admin/subscriptions' },
-  { label: 'Opportunities', href: '/admin/opportunities' },
-  { label: 'Analytics', href: '/admin/analytics' },
-]  
+    { label: 'Listings', href: '/admin/listings' },
+    { label: 'Gigs', href: '/admin/jobs' },
+    { label: 'Stores', href: '/admin/stores' },
+    { label: 'Disputes', href: '/admin/disputes' },
+    { label: 'Bookings', href: '/admin/bookings' },
+    { label: 'Subscriptions', href: '/admin/subscriptions' },
+    { label: 'Opportunities', href: '/admin/opportunities' },
+    { label: 'Analytics', href: '/admin/analytics' },
+  ]
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 space-y-4">
@@ -184,7 +185,6 @@ export default async function CreatorDashboardPage() {
             </Link>
           </div>
         </div>
-
         {profile.tagline && (
           <p className="mt-3 text-sm text-zinc-400 italic">&ldquo;{profile.tagline}&rdquo;</p>
         )}
@@ -217,6 +217,28 @@ export default async function CreatorDashboardPage() {
           <p className="text-xs text-zinc-500">Reputation</p>
         </div>
       </div>
+
+      {/* Wallet Card */}
+      <Link
+        href="/coins"
+        className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 hover:bg-amber-500/10 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20">
+            <Wallet className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Coin Wallet</p>
+            <p className="text-xs text-zinc-500">Use coins to unlock novel chapters</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold text-amber-400">
+            {(wallet?.balance ?? 0).toLocaleString()}
+          </p>
+          <p className="text-xs text-zinc-600">coins</p>
+        </div>
+      </Link>
 
       {/* Pending Booking Requests */}
       {pendingBookings && pendingBookings.length > 0 && (
@@ -329,6 +351,9 @@ export default async function CreatorDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Pulse Feed */}
+      <PulseFeed />
 
       {/* Creator Quick Actions */}
       <div>
