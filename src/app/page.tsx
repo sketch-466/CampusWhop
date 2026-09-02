@@ -12,6 +12,7 @@ import {
   TrendingUp,
   ChevronDown,
 } from "lucide-react";
+import PulseFeed from "@/components/shared/pulse-feed";
 
 const FAQS = [
   {
@@ -51,6 +52,10 @@ const FAQS = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
+
+      {/* Live Activity Ticker */}
+      <PulseFeed />
+
       {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b border-zinc-800/50 bg-[#09090b]/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
