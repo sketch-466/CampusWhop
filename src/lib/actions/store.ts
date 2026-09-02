@@ -41,6 +41,9 @@ interface StoreProduct {
   product_type: string;
   images: string[];
   stock_quantity: number | null;
+  digital_file_url: string | null;
+  delivery_timeframe: string | null;
+  requirements: string | null;
   status: string;
   views_count: number;
   units_sold: number;
@@ -297,16 +300,20 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
     return { success: false, error: "Your store must be approved before you can add products" };
   }
 
+  const productType = formData.get("product_type") as string;
+
   const rawData = {
     title: formData.get("title") as string,
     description: formData.get("description") as string,
     price: formData.get("price") ? parseFloat(formData.get("price") as string) : undefined,
-    product_type: formData.get("product_type") as string,
+    product_type: productType,
     images: JSON.parse((formData.get("images") as string) || "[]"),
     stock_quantity: formData.get("stock_quantity")
       ? parseInt(formData.get("stock_quantity") as string, 10)
       : undefined,
     digital_file_url: (formData.get("digital_file_url") as string) || undefined,
+    delivery_timeframe: (formData.get("delivery_timeframe") as string) || undefined,
+    requirements: (formData.get("requirements") as string) || undefined,
   };
 
   const parsed = storeProductSchema.safeParse(rawData);
@@ -320,7 +327,7 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
   }
 
   const data = parsed.data;
-  const finalStock = data.product_type === "digital" ? null : data.stock_quantity;
+  const finalStock = data.product_type === "physical" ? data.stock_quantity : null;
 
   const { data: product, error: insertError } = await supabase
     .from("store_products")
@@ -333,6 +340,8 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
       images: data.images,
       stock_quantity: finalStock,
       digital_file_url: data.product_type === "digital" ? data.digital_file_url || null : null,
+      delivery_timeframe: data.product_type === "service" ? data.delivery_timeframe || null : null,
+      requirements: data.product_type === "service" ? data.requirements || null : null,
       status: "pending",
     })
     .select("id")
@@ -360,17 +369,20 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
   }
 
   const productId = formData.get("product_id") as string;
+  const productType = formData.get("product_type") as string;
 
   const rawData = {
     title: formData.get("title") as string,
     description: formData.get("description") as string,
     price: formData.get("price") ? parseFloat(formData.get("price") as string) : undefined,
-    product_type: formData.get("product_type") as string,
+    product_type: productType,
     images: JSON.parse((formData.get("images") as string) || "[]"),
     stock_quantity: formData.get("stock_quantity")
       ? parseInt(formData.get("stock_quantity") as string, 10)
       : undefined,
     digital_file_url: (formData.get("digital_file_url") as string) || undefined,
+    delivery_timeframe: (formData.get("delivery_timeframe") as string) || undefined,
+    requirements: (formData.get("requirements") as string) || undefined,
   };
 
   const parsed = storeProductSchema.safeParse(rawData);
@@ -384,7 +396,7 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
   }
 
   const data = parsed.data;
-  const finalStock = data.product_type === "digital" ? null : data.stock_quantity;
+  const finalStock = data.product_type === "physical" ? data.stock_quantity : null;
 
   const { data: product } = await supabase
     .from("store_products")
@@ -406,6 +418,8 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
       images: data.images,
       stock_quantity: finalStock,
       digital_file_url: data.product_type === "digital" ? data.digital_file_url || null : null,
+      delivery_timeframe: data.product_type === "service" ? data.delivery_timeframe || null : null,
+      requirements: data.product_type === "service" ? data.requirements || null : null,
     })
     .eq("id", productId);
 

@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 const RESERVED_SLUGS = new Set([
@@ -53,13 +52,23 @@ export const storeProductSchema = z.object({
     .min(10, "Description must be at least 10 characters")
     .max(2000, "Description must be under 2000 characters"),
   price: z.number().positive("Price must be greater than 0"),
-  product_type: z.enum(["physical", "digital"]),
+  product_type: z.enum(["physical", "digital", "service"]),
   images: z.array(z.string().url()).min(1, "At least one image is required").max(4, "Maximum 4 images"),
   stock_quantity: z
     .union([z.number().int().min(0), z.nan()])
     .optional()
     .transform((v) => (typeof v === "number" && !isNaN(v) ? v : null)),
   digital_file_url: z.string().url().optional().or(z.literal("")),
+  delivery_timeframe: z
+    .string()
+    .max(60, "Delivery timeframe must be under 60 characters")
+    .optional()
+    .or(z.literal("")),
+  requirements: z
+    .string()
+    .max(500, "Requirements must be under 500 characters")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type StoreProductInput = z.infer<typeof storeProductSchema>;
