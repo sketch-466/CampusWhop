@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createStoreProduct, uploadStoreImage } from "@/lib/actions/stores";
+import { createStoreProduct, uploadStoreImage } from "@/lib/actions/store";
 import { ArrowLeft, Upload, X, CheckCircle } from "lucide-react";
 
 const DELIVERY_OPTIONS = [
