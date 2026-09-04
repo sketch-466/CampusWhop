@@ -6,4 +6,7 @@ export default defineConfig({
   logLevel: "log",
   maxDuration: 300,
   dirs: ["./src/trigger"],
+  build: {
+    external: ["@supabase/supabase-js", "resend"],
+  },
 });
