@@ -12,7 +12,7 @@ const adminNav = [
   { label: "Bookings", href: "/admin/bookings" },
   { label: "Subscriptions", href: "/admin/subscriptions" },
   { label: "Analytics", href: "/admin/analytics" },
-]
+];
 
 export default async function AdminListingsPage() {
   const supabase = await createClient();
@@ -29,7 +29,7 @@ export default async function AdminListingsPage() {
 
   const { data: listings } = await supabase
     .from("listings")
-    .select(`*, profiles:seller_id(full_name, email)`)
+    .select(`*, profiles!listings_seller_id_fkey(full_name, email)`)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -40,12 +40,15 @@ export default async function AdminListingsPage() {
 
       <div className="flex flex-wrap gap-2 mt-6 border-b border-zinc-800 pb-4">
         {adminNav.map((item) => (
-          <Link key={item.href} href={item.href}
+          <Link
+            key={item.href}
+            href={item.href}
             className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               item.href === "/admin/listings"
                 ? "bg-emerald-600 text-white"
                 : "border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
-            }`}>
+            }`}
+          >
             {item.label}
           </Link>
         ))}

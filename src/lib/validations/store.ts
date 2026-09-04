@@ -40,7 +40,7 @@ export const storeSchema = z.object({
   logo_url: z.string().url().optional().or(z.literal("")),
 });
 
-export type StoreInput = z.infer<typeof storeSchema>;
+export type StoreInput = z.infer < typeof storeSchema > ;
 
 export const storeProductSchema = z.object({
   title: z
@@ -71,4 +71,4 @@ export const storeProductSchema = z.object({
     .or(z.literal("")),
 });
 
-export type StoreProductInput = z.infer<typeof storeProductSchema>;
+export type StoreProductInput = z.infer < typeof storeProductSchema > ;

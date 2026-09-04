@@ -22,6 +22,7 @@ interface ListingCardProps {
     category: string;
     product_type: string;
     images: string[];
+    status?: string;
     is_featured?: boolean | null;
     seller: Seller | null;
   };
@@ -37,6 +38,9 @@ export function ListingCard({ listing, referralCode }: ListingCardProps) {
     total_reviews: 0,
     is_founding_creator: false,
   };
+
+  const isDemo = listing.status === "demo";
+  const isSoldOut = listing.status === "sold_out";
 
   const initials = seller.full_name
     ? seller.full_name
@@ -62,14 +66,13 @@ export function ListingCard({ listing, referralCode }: ListingCardProps) {
 
   return (
     <div className="relative group">
-      {/* Share button — sits outside the Link */}
-       <div className="absolute top-2 left-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-  <ShareButton
-    listingId={listing.id}
-    title={listing.title}
-    referralCode={referralCode}
-  />
-</div>
+      <div className="absolute top-2 left-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <ShareButton
+          listingId={listing.id}
+          title={listing.title}
+          referralCode={referralCode}
+        />
+      </div>
 
       <Link
         href={`/marketplace/${listing.id}`}
@@ -95,12 +98,27 @@ export function ListingCard({ listing, referralCode }: ListingCardProps) {
             </div>
           )}
 
-          <Badge
-            variant="outline"
-            className="absolute top-2 right-2 bg-zinc-950/80"
-          >
-            {listing.product_type === "physical" ? "Physical" : "Digital"}
-          </Badge>
+          {isDemo && (
+            <div className="absolute top-2 right-2">
+              <span className="rounded-full bg-zinc-800/90 px-2 py-0.5 text-[10px] font-semibold text-zinc-400 border border-zinc-700">
+                Demo
+              </span>
+            </div>
+          )}
+
+          {isSoldOut && !isDemo && (
+            <div className="absolute inset-0 bg-zinc-950/60 flex items-center justify-center">
+              <span className="rounded-full bg-zinc-900 border border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-400">
+                Sold Out
+              </span>
+            </div>
+          )}
+
+          {!isDemo && (
+            <Badge variant="outline" className="absolute bottom-2 right-2 bg-zinc-950/80">
+              {listing.product_type === "physical" ? "Physical" : "Digital"}
+            </Badge>
+          )}
         </div>
 
         <div className="p-4">
@@ -108,26 +126,22 @@ export function ListingCard({ listing, referralCode }: ListingCardProps) {
             <Badge variant="default" className="text-[10px]">
               {categoryLabels[listing.category] || listing.category}
             </Badge>
+            {isDemo && (
+              <span className="text-[10px] text-zinc-500 italic">Sample listing</span>
+            )}
           </div>
-          <h3 className="font-medium text-white line-clamp-2">
-            {listing.title}
-          </h3>
+          <h3 className="font-medium text-white line-clamp-2">{listing.title}</h3>
           <p className="mt-1 text-lg font-bold text-emerald-500">
             ₦{listing.price.toLocaleString()}
           </p>
           <div className="mt-3 flex items-center gap-2">
             <Avatar className="h-5 w-5">
               {seller.avatar_url && (
-                <AvatarImage
-                  src={seller.avatar_url}
-                  alt={seller.full_name || ""}
-                />
+                <AvatarImage src={seller.avatar_url} alt={seller.full_name || ""} />
               )}
               <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
             </Avatar>
-            <span className="text-xs text-zinc-400">
-              {seller.full_name || "Unknown"}
-            </span>
+            <span className="text-xs text-zinc-400">{seller.full_name || "Unknown"}</span>
             {seller.is_founding_creator && (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
                 🌟 Founder

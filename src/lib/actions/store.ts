@@ -481,7 +481,7 @@ export async function getStoreProducts(storeId: string, includePending = false) 
     .order("created_at", { ascending: false });
 
   if (!includePending) {
-    query = query.eq("status", "active");
+    query = query.in("status", ["active", "demo", "sold_out"]);
   }
 
   const { data, error } = await query;

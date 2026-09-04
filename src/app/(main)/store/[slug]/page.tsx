@@ -64,17 +64,24 @@ export default async function StorePage({
         </div>
       )}
 
-      <h2 className="text-lg font-semibold text-white mb-4">Products</h2>
+      <h2 className="text-lg font-semibold text-white mb-4">Products & Services</h2>
       {!products || products.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">
           <p className="text-zinc-400">No products available yet.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product: any) => (
-            <StoreProductCard key={product.id} product={product} storeSlug={slug} />
-          ))}
-        </div>
+        <>
+          {products.some((p: any) => p.status === "demo") && (
+            <p className="mb-4 text-xs text-zinc-500 border border-zinc-800 rounded-lg px-4 py-2 bg-zinc-900/30">
+              Some listings are sample products shown while this store is getting started.
+            </p>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product: any) => (
+              <StoreProductCard key={product.id} product={product} storeSlug={slug} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

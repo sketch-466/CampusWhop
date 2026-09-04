@@ -132,7 +132,6 @@ export default function NewStoreProductPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
 
-        {/* Type selector — prominent, at the top */}
         <div className="space-y-2">
           <Label>What are you listing?</Label>
           <div className="grid grid-cols-3 gap-3">
