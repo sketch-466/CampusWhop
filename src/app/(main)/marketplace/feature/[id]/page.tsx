@@ -81,13 +81,13 @@ export default async function FeatureListingPage({
         ))}
       </div>
 
-      {/* Pricing plans */}
+      {/* Pricing plans — each is its own form */}
       <div className="space-y-3">
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Choose a duration</p>
         {FEATURE_PLANS.map((plan) => (
           <div
             key={plan.days}
-            className={`relative rounded-xl border p-4 transition-colors ${
+            className={`relative rounded-xl border p-4 ${
               plan.highlight
                 ? "border-amber-500/50 bg-amber-900/10"
                 : "border-zinc-800 bg-zinc-900/30"
@@ -105,25 +105,25 @@ export default async function FeatureListingPage({
               </div>
               <div className="text-right">
                 <p className="font-bold text-emerald-400">₦{plan.price.toLocaleString()}</p>
-                <button
-                  className={`mt-2 rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${
-                    plan.highlight
-                      ? "bg-amber-500 hover:bg-amber-600 text-white"
-                      : "bg-zinc-700 hover:bg-zinc-600 text-white"
-                  }`}
-                  onClick={() => {}}
-                >
-                  Select
-                </button>
+                <p className="text-xs text-zinc-500 mt-0.5">Coming soon</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <p className="mt-4 text-center text-xs text-zinc-600">
-        Payment powered by Paystack · Secure checkout
+      <p className="mt-6 text-center text-xs text-zinc-500">
+        Paid featuring is coming soon. Contact us on WhatsApp to feature your listing manually.
       </p>
+
+      <div className="mt-4 text-center">
+        <a
+          href="https://wa.me/+2348000000000"
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
+        >
+          Contact on WhatsApp
+        </a>
+      </div>
     </div>
   );
 }
