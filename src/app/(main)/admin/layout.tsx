@@ -6,7 +6,7 @@ const adminNav = [
   { label: "Listings", href: "/admin/listings" },
   { label: "Gigs", href: "/admin/jobs" },
   { label: "Stores", href: "/admin/stores" },
-  { label: "Featured", href: "/admin/featured" },  // ← add this
+  { label: "Featured", href: "/admin/featured" },
   { label: "Disputes", href: "/admin/disputes" },
   { label: "Opportunities", href: "/admin/opportunities" },
   { label: "Bookings", href: "/admin/bookings" },
