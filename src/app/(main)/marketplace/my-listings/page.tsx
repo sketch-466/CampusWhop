@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getUserListings } from "@/lib/actions/listings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft, Trash2 } from "lucide-react";
+import { Plus, ArrowLeft, Trash2, Star } from "lucide-react";
 
 const statusColors: Record<string, "default" | "success" | "warning" | "destructive"> = {
   pending: "warning",
@@ -67,43 +67,60 @@ export default async function MyListingsPage() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-white truncate">
-                  {listing.title}
-                </h3>
-                <p className="text-sm text-emerald-500">
-                  ₦{listing.price.toLocaleString()}
-                </p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge
-                    variant={statusColors[listing.status] || "default"}
-                  >
-                    {listing.status}
-                  </Badge>
-                  {listing.rejection_reason && (
-                    <span className="text-xs text-red-400">
-                      {listing.rejection_reason}
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium text-white truncate">{listing.title}</h3>
+                  {listing.is_featured && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20 shrink-0">
+                      <Star className="h-2.5 w-2.5 fill-amber-400" />
+                      Featured
                     </span>
                   )}
                 </div>
+                <p className="text-sm text-emerald-500">
+                  ₦{listing.price.toLocaleString()}
+                </p>
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  <Badge variant={statusColors[listing.status] || "default"}>
+                    {listing.status}
+                  </Badge>
+                  {listing.is_featured && listing.featured_until && (
+                    <span className="text-[10px] text-zinc-500">
+                      Featured until {new Date(listing.featured_until).toLocaleDateString("en-NG", {
+                        day: "numeric", month: "short",
+                      })}
+                    </span>
+                  )}
+                  {listing.rejection_reason && (
+                    <span className="text-xs text-red-400">{listing.rejection_reason}</span>
+                  )}
+                </div>
               </div>
-              <form
-                action={async () => {
-                  "use server";
-                  const { deleteListing } = await import(
-                    "@/lib/actions/listings"
-                  );
-                  await deleteListing(listing.id);
-                }}
-              >
-                <Button
-                  type="submit"
-                  variant="outline"
-                  size="sm"
-                  className="text-red-400 hover:bg-red-900/20"
+              <div className="flex items-center gap-2 shrink-0">
+                {listing.status === "active" && !listing.is_featured && (
+                  <Link href={`/marketplace/feature/${listing.id}`}>
+                    <button className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 px-2.5 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/10 transition-colors">
+                      <Star className="h-3 w-3" />
+                      Feature
+                    </button>
+                  </Link>
+                )}
+                <form
+                  action={async () => {
+                    "use server";
+                    const { deleteListing } = await import("@/lib/actions/listings");
+                    await deleteListing(listing.id);
+                  }}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    className="text-red-400 hover:bg-red-900/20"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
             </div>
           ))}
         </div>

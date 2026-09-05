@@ -13,6 +13,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import PulseFeed from "@/components/shared/pulse-feed";
+import { FeaturedSection } from "@/components/shared/featured-section";
+import { getFeaturedItems } from "@/lib/actions/features";
 
 const FAQS = [
   {
@@ -49,7 +51,8 @@ const FAQS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { listings: featuredListings, products: featuredProducts } = await getFeaturedItems();
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
 
@@ -138,6 +141,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      
+      {/* Featured Section */}
+<FeaturedSection listings={featuredListings} products={featuredProducts} />
 
       {/* Features */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">

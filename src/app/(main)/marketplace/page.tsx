@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { getActiveListings } from "@/lib/actions/listings";
+import { getFeaturedItems } from "@/lib/actions/features";
 import { ListingCard } from "@/components/shared/listing-card";
+import { FeaturedSection } from "@/components/shared/featured-section";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus } from "lucide-react";
@@ -29,11 +31,13 @@ export default async function MarketplacePage({
   const search = typeof params.search === "string" ? params.search : undefined;
   const productType = typeof params.type === "string" ? params.type : undefined;
 
-  const { listings, error } = await getActiveListings({
-    category,
-    search,
-    product_type: productType,
-  });
+  const [{ listings, error }, { listings: featuredListings, products: featuredProducts }] =
+    await Promise.all([
+      getActiveListings({ category, search, product_type: productType }),
+      getFeaturedItems(),
+    ]);
+
+  const showFeatured = !category && !search && !productType;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -64,26 +68,17 @@ export default async function MarketplacePage({
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-2">
         <Link href="/marketplace">
-          <Badge
-            variant={!category && !productType ? "success" : "default"}
-            className="cursor-pointer"
-          >
+          <Badge variant={!category && !productType ? "success" : "default"} className="cursor-pointer">
             All
           </Badge>
         </Link>
         <Link href={`/marketplace?type=physical${category ? `&category=${category}` : ""}`}>
-          <Badge
-            variant={productType === "physical" ? "success" : "default"}
-            className="cursor-pointer"
-          >
+          <Badge variant={productType === "physical" ? "success" : "default"} className="cursor-pointer">
             Physical
           </Badge>
         </Link>
         <Link href={`/marketplace?type=digital${category ? `&category=${category}` : ""}`}>
-          <Badge
-            variant={productType === "digital" ? "success" : "default"}
-            className="cursor-pointer"
-          >
+          <Badge variant={productType === "digital" ? "success" : "default"} className="cursor-pointer">
             Digital
           </Badge>
         </Link>
@@ -92,15 +87,20 @@ export default async function MarketplacePage({
             key={cat.value}
             href={`/marketplace?category=${cat.value}${productType ? `&type=${productType}` : ""}`}
           >
-            <Badge
-              variant={category === cat.value ? "success" : "default"}
-              className="cursor-pointer"
-            >
+            <Badge variant={category === cat.value ? "success" : "default"} className="cursor-pointer">
               {cat.label}
             </Badge>
           </Link>
         ))}
       </div>
+
+      {/* Featured section — only on unfiltered view */}
+      {showFeatured && (
+        <FeaturedSection
+          listings={featuredListings}
+          products={featuredProducts}
+        />
+      )}
 
       {/* Listings Grid */}
       {error ? (
