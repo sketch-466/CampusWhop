@@ -1,19 +1,16 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { opportunitySchema, type OpportunityInput } from '@/lib/validations/opportunities'
-import type { Opportunity, OpportunityWithPoster, SavedOpportunity } from '@/types/database'
-
-// ─── PUBLIC QUERIES ───────────────────────────────────────────────
+import type { Opportunity, OpportunityWithPoster } from '@/types/database'
 
 export async function getOpportunities(filters?: {
   category?: string
 }): Promise<OpportunityWithPoster[]> {
   const supabase = await createClient()
-
-  // Auto-expire before fetching
   await supabase.rpc('expire_past_opportunities')
 
   let query = supabase
@@ -47,8 +44,6 @@ export async function incrementOpportunityViews(id: string) {
   const supabase = await createClient()
   await supabase.rpc('increment_opportunity_views', { opportunity_id: id })
 }
-
-// ─── USER ACTIONS ─────────────────────────────────────────────────
 
 export async function createOpportunity(input: OpportunityInput) {
   const supabase = await createClient()
@@ -98,8 +93,6 @@ export async function getMyOpportunities(): Promise<Opportunity[]> {
   if (error) throw new Error(error.message)
   return (data ?? []) as Opportunity[]
 }
-
-// ─── SAVED OPPORTUNITIES ──────────────────────────────────────────
 
 export async function getSavedOpportunities(): Promise<OpportunityWithPoster[]> {
   const supabase = await createClient()
@@ -161,8 +154,6 @@ export async function checkIfSaved(opportunityId: string): Promise<boolean> {
   return !!data
 }
 
-// ─── ADMIN ACTIONS ────────────────────────────────────────────────
-
 export async function getPendingOpportunities(): Promise<OpportunityWithPoster[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -176,7 +167,8 @@ export async function getPendingOpportunities(): Promise<OpportunityWithPoster[]
 
   if (!profile?.is_admin) redirect('/dashboard')
 
-  const { data, error } = await supabase
+  const adminClient = createAdminClient()
+  const { data, error } = await adminClient
     .from('opportunities')
     .select('*, profiles!opportunities_poster_id_fkey(id, full_name, avatar_url)')
     .eq('status', 'pending')
@@ -200,7 +192,8 @@ export async function approveOpportunity(id: string) {
 
   if (!profile?.is_admin) throw new Error('Unauthorized')
 
-  const { error } = await supabase
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
     .from('opportunities')
     .update({ status: 'active', updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -223,7 +216,8 @@ export async function rejectOpportunity(id: string, reason: string) {
 
   if (!profile?.is_admin) throw new Error('Unauthorized')
 
-  const { error } = await supabase
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
     .from('opportunities')
     .update({
       status: 'rejected',

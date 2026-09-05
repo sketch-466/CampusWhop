@@ -1,10 +1,10 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { jobPostSchema, jobApplicationSchema, type JobPostInput, type JobApplicationInput } from '@/lib/validations/jobs'
 import { revalidatePath } from 'next/cache'
 
-// Helper to normalize Supabase joined relation
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null
   if (Array.isArray(rel)) return rel[0] ?? null
@@ -21,16 +21,11 @@ interface PosterProfile {
 
 export async function createJobPost(data: JobPostInput) {
   const supabase = await createClient()
-
   const parsed = jobPostSchema.safeParse(data)
-  if (!parsed.success) {
-    return { error: parsed.error.errors[0].message }
-  }
+  if (!parsed.success) return { error: parsed.error.errors[0].message }
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const deadline = parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null
 
@@ -57,10 +52,7 @@ export async function createJobPost(data: JobPostInput) {
     .select()
     .single()
 
-  if (error) {
-    console.error('Create job post error:', error)
-    return { error: 'Failed to create job post' }
-  }
+  if (error) return { error: 'Failed to create job post' }
 
   revalidatePath('/jobs')
   return { success: true, jobId: job.id }
@@ -75,34 +67,19 @@ export async function getActiveJobs(filters?: {
 
   let query = supabase
     .from('job_posts')
-    .select(`
-      *,
-      poster:profiles(id, full_name, avatar_url, reputation_score, total_reviews)
-    `)
+    .select(`*, poster:profiles(id, full_name, avatar_url, reputation_score, total_reviews)`)
     .eq('status', 'active')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
-  if (filters?.job_type) {
-    query = query.eq('job_type', filters.job_type)
-  }
-
-  if (filters?.is_paid !== undefined) {
-    query = query.eq('is_paid', filters.is_paid)
-  }
-
+  if (filters?.job_type) query = query.eq('job_type', filters.job_type)
+  if (filters?.is_paid !== undefined) query = query.eq('is_paid', filters.is_paid)
   if (filters?.search) {
-    query = query.textSearch('title', filters.search, {
-      type: 'websearch',
-      config: 'english',
-    })
+    query = query.textSearch('title', filters.search, { type: 'websearch', config: 'english' })
   }
 
   const { data, error } = await query
-
-  if (error) {
-    return { error: 'Failed to fetch jobs' }
-  }
+  if (error) return { error: 'Failed to fetch jobs' }
 
   const jobs = (data || []).map((item) => ({
     ...item,
@@ -114,23 +91,16 @@ export async function getActiveJobs(filters?: {
 
 export async function getJobById(id: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data, error } = await supabase
     .from('job_posts')
-    .select(`
-      *,
-      poster:profiles(id, full_name, avatar_url, reputation_score, total_reviews)
-    `)
+    .select(`*, poster:profiles(id, full_name, avatar_url, reputation_score, total_reviews)`)
     .eq('id', id)
     .single()
 
-  if (error || !data) {
-    return { error: 'Job not found' }
-  }
+  if (error || !data) return { error: 'Job not found' }
 
-  // Only return active jobs to non-owners/non-admins
   if (data.status !== 'active' && data.poster_id !== user?.id) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -138,12 +108,9 @@ export async function getJobById(id: string) {
       .eq('id', user?.id || '')
       .single()
 
-    if (!profile?.is_admin) {
-      return { error: 'Job not available' }
-    }
+    if (!profile?.is_admin) return { error: 'Job not available' }
   }
 
-  // Increment view count
   if (data.poster_id !== user?.id) {
     await supabase
       .from('job_posts')
@@ -161,36 +128,24 @@ export async function getJobById(id: string) {
 
 export async function getUserJobPosts() {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { data, error } = await supabase
     .from('job_posts')
-    .select(`
-      *,
-      applications_count:job_applications(count)
-    `)
+    .select(`*, applications_count:job_applications(count)`)
     .eq('poster_id', user.id)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    return { error: 'Failed to fetch job posts' }
-  }
-
+  if (error) return { error: 'Failed to fetch job posts' }
   return { jobs: data || [] }
 }
 
 export async function closeJobPost(id: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { error } = await supabase
     .from('job_posts')
@@ -198,9 +153,7 @@ export async function closeJobPost(id: string) {
     .eq('id', id)
     .eq('poster_id', user.id)
 
-  if (error) {
-    return { error: 'Failed to close job post' }
-  }
+  if (error) return { error: 'Failed to close job post' }
 
   revalidatePath('/jobs/my-posts')
   revalidatePath('/jobs')
@@ -209,24 +162,16 @@ export async function closeJobPost(id: string) {
 
 export async function deleteJobPost(id: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { error } = await supabase
     .from('job_posts')
-    .update({
-      deleted_at: new Date().toISOString(),
-      status: 'deleted',
-    })
+    .update({ deleted_at: new Date().toISOString(), status: 'deleted' })
     .eq('id', id)
     .eq('poster_id', user.id)
 
-  if (error) {
-    return { error: 'Failed to delete job post' }
-  }
+  if (error) return { error: 'Failed to delete job post' }
 
   revalidatePath('/jobs/my-posts')
   revalidatePath('/jobs')
@@ -235,41 +180,23 @@ export async function deleteJobPost(id: string) {
 
 export async function applyToJob(data: JobApplicationInput) {
   const supabase = await createClient()
-
   const parsed = jobApplicationSchema.safeParse(data)
-  if (!parsed.success) {
-    return { error: parsed.error.errors[0].message }
-  }
+  if (!parsed.success) return { error: parsed.error.errors[0].message }
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'You must be logged in to apply' }
-  }
+  if (!user) return { error: 'You must be logged in to apply' }
 
-  // Check job exists, is active, and uses internal apply
   const { data: job, error: jobError } = await supabase
     .from('job_posts')
     .select('poster_id, status, apply_method')
     .eq('id', data.job_id)
     .single()
 
-  if (jobError || !job) {
-    return { error: 'Job not found' }
-  }
+  if (jobError || !job) return { error: 'Job not found' }
+  if (job.status !== 'active') return { error: 'This job is no longer accepting applications' }
+  if (job.apply_method !== 'internal') return { error: 'This job uses external application' }
+  if (job.poster_id === user.id) return { error: 'You cannot apply to your own job post' }
 
-  if (job.status !== 'active') {
-    return { error: 'This job is no longer accepting applications' }
-  }
-
-  if (job.apply_method !== 'internal') {
-    return { error: 'This job uses external application' }
-  }
-
-  if (job.poster_id === user.id) {
-    return { error: 'You cannot apply to your own job post' }
-  }
-
-  // Check not already applied
   const { data: existing } = await supabase
     .from('job_applications')
     .select('id')
@@ -277,22 +204,13 @@ export async function applyToJob(data: JobApplicationInput) {
     .eq('applicant_id', user.id)
     .maybeSingle()
 
-  if (existing) {
-    return { error: 'You have already applied to this job' }
-  }
+  if (existing) return { error: 'You have already applied to this job' }
 
   const { error: insertError } = await supabase
     .from('job_applications')
-    .insert({
-      job_id: data.job_id,
-      applicant_id: user.id,
-      cover_letter: data.cover_letter,
-    })
+    .insert({ job_id: data.job_id, applicant_id: user.id, cover_letter: data.cover_letter })
 
-  if (insertError) {
-    console.error('Apply error:', insertError)
-    return { error: 'Failed to submit application' }
-  }
+  if (insertError) return { error: 'Failed to submit application' }
 
   revalidatePath(`/jobs/${data.job_id}`)
   revalidatePath('/jobs/applications')
@@ -301,59 +219,39 @@ export async function applyToJob(data: JobApplicationInput) {
 
 export async function getUserApplications() {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { data, error } = await supabase
     .from('job_applications')
-    .select(`
-      *,
-      job:job_posts(id, title, company, status)
-    `)
+    .select(`*, job:job_posts(id, title, company, status)`)
     .eq('applicant_id', user.id)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    return { error: 'Failed to fetch applications' }
-  }
-
+  if (error) return { error: 'Failed to fetch applications' }
   return { applications: data || [] }
 }
 
 export async function getJobApplications(jobId: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
-  // Verify user is the job poster
   const { data: job } = await supabase
     .from('job_posts')
     .select('poster_id')
     .eq('id', jobId)
     .single()
 
-  if (!job || job.poster_id !== user.id) {
-    return { error: 'Unauthorized' }
-  }
+  if (!job || job.poster_id !== user.id) return { error: 'Unauthorized' }
 
   const { data, error } = await supabase
     .from('job_applications')
-    .select(`
-      *,
-      applicant:profiles(id, full_name, avatar_url, university, reputation_score, total_reviews)
-    `)
+    .select(`*, applicant:profiles(id, full_name, avatar_url, university, reputation_score, total_reviews)`)
     .eq('job_id', jobId)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    return { error: 'Failed to fetch applications' }
-  }
+  if (error) return { error: 'Failed to fetch applications' }
 
   const applications = (data || []).map((item) => ({
     ...item,
@@ -365,27 +263,19 @@ export async function getJobApplications(jobId: string) {
 
 export async function updateApplicationStatus(applicationId: string, status: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const validStatuses = ['pending', 'reviewing', 'accepted', 'rejected']
-  if (!validStatuses.includes(status)) {
-    return { error: 'Invalid status' }
-  }
+  if (!validStatuses.includes(status)) return { error: 'Invalid status' }
 
-  // Verify user owns the job this application is for
   const { data: app } = await supabase
     .from('job_applications')
     .select('job_id')
     .eq('id', applicationId)
     .single()
 
-  if (!app) {
-    return { error: 'Application not found' }
-  }
+  if (!app) return { error: 'Application not found' }
 
   const { data: job } = await supabase
     .from('job_posts')
@@ -393,31 +283,23 @@ export async function updateApplicationStatus(applicationId: string, status: str
     .eq('id', app.job_id)
     .single()
 
-  if (!job || job.poster_id !== user.id) {
-    return { error: 'Unauthorized' }
-  }
+  if (!job || job.poster_id !== user.id) return { error: 'Unauthorized' }
 
   const { error } = await supabase
     .from('job_applications')
     .update({ status })
     .eq('id', applicationId)
 
-  if (error) {
-    return { error: 'Failed to update status' }
-  }
+  if (error) return { error: 'Failed to update status' }
 
   revalidatePath(`/jobs/${app.job_id}/applicants`)
   return { success: true }
 }
 
-// Admin actions
 export async function getPendingJobs() {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -425,34 +307,24 @@ export async function getPendingJobs() {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.is_admin) {
-    return { error: 'Unauthorized' }
-  }
+  if (!profile?.is_admin) return { error: 'Unauthorized' }
 
-  const { data, error } = await supabase
+  const adminClient = createAdminClient()
+  const { data, error } = await adminClient
     .from('job_posts')
-    .select(`
-      *,
-      poster:profiles(full_name, email, university)
-    `)
+    .select(`*, poster:profiles!job_posts_poster_id_fkey(full_name, email, university)`)
     .eq('status', 'pending')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    return { error: 'Failed to fetch pending jobs' }
-  }
-
+  if (error) return { error: 'Failed to fetch pending jobs' }
   return { jobs: data || [] }
 }
 
 export async function approveJob(id: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -460,18 +332,15 @@ export async function approveJob(id: string) {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.is_admin) {
-    return { error: 'Unauthorized' }
-  }
+  if (!profile?.is_admin) return { error: 'Unauthorized' }
 
-  const { error } = await supabase
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
     .from('job_posts')
     .update({ status: 'active' })
     .eq('id', id)
 
-  if (error) {
-    return { error: 'Failed to approve job' }
-  }
+  if (error) return { error: 'Failed to approve job' }
 
   revalidatePath('/admin/jobs')
   revalidatePath('/jobs')
@@ -480,11 +349,8 @@ export async function approveJob(id: string) {
 
 export async function rejectJob(id: string, reason: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+  if (!user) return { error: 'Not authenticated' }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -492,21 +358,15 @@ export async function rejectJob(id: string, reason: string) {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.is_admin) {
-    return { error: 'Unauthorized' }
-  }
+  if (!profile?.is_admin) return { error: 'Unauthorized' }
 
-  const { error } = await supabase
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
     .from('job_posts')
-    .update({
-      status: 'rejected',
-      rejection_reason: reason,
-    })
+    .update({ status: 'rejected', rejection_reason: reason })
     .eq('id', id)
 
-  if (error) {
-    return { error: 'Failed to reject job' }
-  }
+  if (error) return { error: 'Failed to reject job' }
 
   revalidatePath('/admin/jobs')
   return { success: true }
@@ -514,11 +374,8 @@ export async function rejectJob(id: string, reason: string) {
 
 export async function hasAppliedToJob(jobId: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { hasApplied: false }
-  }
+  if (!user) return { hasApplied: false }
 
   const { data } = await supabase
     .from('job_applications')
