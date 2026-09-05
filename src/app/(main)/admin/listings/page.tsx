@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { AdminListingsClient } from "@/components/shared/admin-listings-client";
 
 export default async function AdminListingsPage() {
@@ -23,6 +24,31 @@ export default async function AdminListingsPage() {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
+  async function approveListing(id: string) {
+    "use server";
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
+      .from("listings")
+      .update({ status: "active", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/admin/listings");
+    revalidatePath("/marketplace");
+    return {};
+  }
+
+  async function rejectListing(id: string) {
+    "use server";
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
+      .from("listings")
+      .update({ status: "rejected", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/admin/listings");
+    return {};
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -31,7 +57,11 @@ export default async function AdminListingsPage() {
           {listings?.length ?? 0} listing{listings?.length !== 1 ? 's' : ''} awaiting review.
         </p>
       </div>
-      <AdminListingsClient initialListings={listings || []} />
+      <AdminListingsClient
+        initialListings={listings || []}
+        onApprove={approveListing}
+        onReject={rejectListing}
+      />
     </div>
   );
 }

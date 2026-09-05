@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
@@ -21,25 +19,30 @@ interface Listing {
   } | null;
 }
 
-export function AdminListingsClient({ initialListings }: { initialListings: Listing[] }) {
+interface AdminListingsClientProps {
+  initialListings: Listing[];
+  onApprove: (id: string) => Promise<{ error?: string }>;
+  onReject: (id: string) => Promise<{ error?: string }>;
+}
+
+export function AdminListingsClient({
+  initialListings,
+  onApprove,
+  onReject,
+}: AdminListingsClientProps) {
   const [listings, setListings] = useState<Listing[]>(initialListings);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const supabase = createClient();
 
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function approveListing(id: string) {
+  async function handleApprove(id: string) {
     setActionLoading(id);
-    const { error } = await supabase
-      .from("listings")
-      .update({ status: "active" })
-      .eq("id", id);
-
-    if (error) {
+    const result = await onApprove(id);
+    if (result?.error) {
       showToast("Failed to approve listing", "error");
     } else {
       showToast("Listing approved!", "success");
@@ -48,14 +51,10 @@ export function AdminListingsClient({ initialListings }: { initialListings: List
     setActionLoading(null);
   }
 
-  async function rejectListing(id: string) {
+  async function handleReject(id: string) {
     setActionLoading(id);
-    const { error } = await supabase
-      .from("listings")
-      .update({ status: "rejected" })
-      .eq("id", id);
-
-    if (error) {
+    const result = await onReject(id);
+    if (result?.error) {
       showToast("Failed to reject listing", "error");
     } else {
       showToast("Listing rejected", "success");
@@ -65,7 +64,7 @@ export function AdminListingsClient({ initialListings }: { initialListings: List
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div>
       {toast && (
         <div className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
           toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
@@ -74,11 +73,7 @@ export function AdminListingsClient({ initialListings }: { initialListings: List
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-          <p className="text-zinc-400 mt-1">Review and approve pending listings</p>
-        </div>
+      <div className="flex items-center justify-between mb-6">
         <Badge variant="warning">{listings.length} Pending</Badge>
       </div>
 
@@ -114,23 +109,20 @@ export function AdminListingsClient({ initialListings }: { initialListings: List
                 <p className="text-zinc-400 text-sm mt-3 line-clamp-2">{listing.description}</p>
 
                 <div className="flex gap-3 mt-4">
-                  <Button
-                    onClick={() => approveListing(listing.id)}
+                  <button
+                    onClick={() => handleApprove(listing.id)}
                     disabled={actionLoading === listing.id}
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium disabled:opacity-50"
                   >
                     {actionLoading === listing.id ? "Processing..." : "Approve"}
-                  </Button>
-                  <Button
-                    onClick={() => rejectListing(listing.id)}
+                  </button>
+                  <button
+                    onClick={() => handleReject(listing.id)}
                     disabled={actionLoading === listing.id}
-                    variant="outline"
-                    size="sm"
-                    className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                    className="px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium disabled:opacity-50"
                   >
                     Reject
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
