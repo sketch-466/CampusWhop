@@ -118,7 +118,7 @@ export default async function FeatureListingPage({
 
       <div className="mt-4 text-center">
         <a
-          href="https://wa.me/+2348000000000"
+          href="https://wa.me/+2348152031327"
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
         >
           Contact on WhatsApp
