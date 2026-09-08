@@ -228,6 +228,170 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+      
+            {/* CampusWhop Ecosystem */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
+        <div className="overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/40 via-zinc-950 to-zinc-950">
+          <div className="px-6 py-12 sm:px-10 sm:py-16">
+            <div className="mx-auto max-w-3xl text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                The CampusWhop ecosystem
+              </div>
+
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                One campus.
+                <br />
+                <span className="text-emerald-500">
+                  Multiple ways to grow.
+                </span>
+              </h2>
+
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+                Discover products, opportunities, talented students, and new
+                ways to turn what you know into something valuable.
+              </p>
+            </div>
+
+            {/* Ecosystem visual */}
+            <div className="relative mx-auto mt-12 max-w-4xl">
+              {/* Decorative glow */}
+              <div className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+
+              <div className="relative grid gap-4 sm:grid-cols-2">
+                {/* Products */}
+                <Link
+                  href="/marketplace"
+                  className="group rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-zinc-900"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <ShoppingBag className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-emerald-400" />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-semibold text-white">
+                    Products
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    Find physical and digital products made or sold by
+                    students around campus.
+                  </p>
+
+                  <div className="mt-4 text-xs font-medium text-emerald-400">
+                    Explore marketplace →
+                  </div>
+                </Link>
+
+                {/* Opportunities */}
+                <Link
+                  href="/opportunities"
+                  className="group rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-zinc-900"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <TrendingUp className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-emerald-400" />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-semibold text-white">
+                    Opportunities
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    Discover scholarships, internships, competitions, and
+                    other opportunities.
+                  </p>
+
+                  <div className="mt-4 text-xs font-medium text-emerald-400">
+                    Explore opportunities →
+                  </div>
+                </Link>
+
+                {/* Creators */}
+                <Link
+                  href="/creators"
+                  className="group rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-zinc-900"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <Users className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-emerald-400" />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-semibold text-white">
+                    Student Talent
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    Discover developers, designers, writers, tutors, and other
+                    talented students.
+                  </p>
+
+                  <div className="mt-4 text-xs font-medium text-emerald-400">
+                    Discover creators →
+                  </div>
+                </Link>
+
+                {/* Services */}
+                <Link
+                  href="/gigs"
+                  className="group rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-zinc-900"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <Zap className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-emerald-400" />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-semibold text-white">
+                    Skills & Services
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    Turn your skills into services and connect with students
+                    who need what you offer.
+                  </p>
+
+                  <div className="mt-4 text-xs font-medium text-emerald-400">
+                    Explore gigs →
+                  </div>
+                </Link>
+              </div>
+
+              {/* Center brand */}
+              <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 sm:block">
+                <div className="flex h-24 w-24 items-center justify-center rounded-full border border-emerald-500/30 bg-[#09090b] shadow-2xl shadow-emerald-500/10">
+                  <div className="text-center">
+                    <div className="text-xs font-bold text-emerald-500">
+                      Campus
+                    </div>
+                    <div className="text-xs font-bold text-white">
+                      Whop
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom message */}
+            <div className="mt-10 text-center">
+              <p className="text-sm text-zinc-500">
+                Built around the things students actually need.
+              </p>
+
+              <Link
+                href="/register"
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600"
+              >
+                Find your place on CampusWhop
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Who is this for */}
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:pb-20">
@@ -385,8 +549,7 @@ export default async function HomePage() {
             Your campus business starts today
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-zinc-300">
-            Join FUNAI students already selling, booking, and earning on
-            CampusWhop.
+            Join the first wave of FUNAI students building on CampusWhop.
           </p>
           <Link
             href="/register"
