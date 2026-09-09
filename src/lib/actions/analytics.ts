@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -63,13 +64,13 @@ export type StudentStats = {
 
 export async function getAdminStats(): Promise<AdminStats> {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString();
 
-  // Revenue
-  const { data: allOrders } = await supabase
+  const { data: allOrders } = await adminClient
     .from("orders")
     .select("amount, platform_fee, status, created_at, seller_id")
     .in("status", ["completed", "delivered"]);
@@ -79,45 +80,39 @@ export async function getAdminStats(): Promise<AdminStats> {
     ?.filter((o) => o.created_at >= startOfMonth)
     .reduce((sum, o) => sum + (o.platform_fee ?? 0), 0) ?? 0;
 
-  // Users
-  const { count: totalUsers } = await supabase
+  const { count: totalUsers } = await adminClient
     .from("profiles")
     .select("*", { count: "exact", head: true })
     .is("deleted_at", null);
 
-  const { count: newUsersThisMonth } = await supabase
+  const { count: newUsersThisMonth } = await adminClient
     .from("profiles")
     .select("*", { count: "exact", head: true })
     .gte("created_at", startOfMonth)
     .is("deleted_at", null);
 
-  // Orders total
-  const { count: totalOrders } = await supabase
+  const { count: totalOrders } = await adminClient
     .from("orders")
     .select("*", { count: "exact", head: true });
 
-  const { count: ordersThisMonth } = await supabase
+  const { count: ordersThisMonth } = await adminClient
     .from("orders")
     .select("*", { count: "exact", head: true })
     .gte("created_at", startOfMonth);
 
-  // Pending approvals
   const [
     { count: pendingListings },
     { count: pendingJobs },
-    { count: pendingHousing },
     { count: pendingStores },
     { count: pendingOpportunities },
   ] = await Promise.all([
-    supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("job_posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("housing_listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("stores").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("opportunities").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    adminClient.from("listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    adminClient.from("job_posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    adminClient.from("stores").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    adminClient.from("opportunities").select("*", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
-  // Orders by status
-  const { data: orderStatusData } = await supabase
+  const { data: orderStatusData } = await adminClient
     .from("orders")
     .select("status");
 
@@ -127,8 +122,7 @@ export async function getAdminStats(): Promise<AdminStats> {
   });
   const ordersByStatus = Object.entries(statusMap).map(([status, count]) => ({ status, count }));
 
-  // Revenue by month (last 12)
-  const { data: monthlyOrders } = await supabase
+  const { data: monthlyOrders } = await adminClient
     .from("orders")
     .select("platform_fee, created_at")
     .in("status", ["completed", "delivered"])
@@ -136,8 +130,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
   const revenueByMonth = buildMonthlyRevenue(monthlyOrders ?? []);
 
-  // New users by month (last 12)
-  const { data: monthlyUsers } = await supabase
+  const { data: monthlyUsers } = await adminClient
     .from("profiles")
     .select("created_at")
     .gte("created_at", twelveMonthsAgo)
@@ -145,8 +138,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
   const newUsersByMonth = buildMonthlyCount(monthlyUsers ?? []);
 
-  // Top sellers
-  const { data: sellerOrders } = await supabase
+  const { data: sellerOrders } = await adminClient
     .from("orders")
     .select("seller_id, platform_fee, amount")
     .in("status", ["completed", "delivered"]);
@@ -166,7 +158,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
   let topSellers: AdminStats["topSellers"] = [];
   if (topSellerIds.length > 0) {
-    const { data: sellerProfiles } = await supabase
+    const { data: sellerProfiles } = await adminClient
       .from("profiles")
       .select("id, full_name, email")
       .in("id", topSellerIds);
@@ -180,25 +172,21 @@ export async function getAdminStats(): Promise<AdminStats> {
     }));
   }
 
-  // Module activity (total active content per module)
   const [
     { count: activeListings },
     { count: activeJobs },
-    { count: activeHousing },
     { count: activeStores },
     { count: activeOpportunities },
   ] = await Promise.all([
-    supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("job_posts").select("*", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("housing_listings").select("*", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("stores").select("*", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("opportunities").select("*", { count: "exact", head: true }).eq("status", "active"),
+    adminClient.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
+    adminClient.from("job_posts").select("*", { count: "exact", head: true }).eq("status", "active"),
+    adminClient.from("stores").select("*", { count: "exact", head: true }).eq("status", "active"),
+    adminClient.from("opportunities").select("*", { count: "exact", head: true }).eq("status", "active"),
   ]);
 
   const moduleActivity = [
     { module: "Marketplace", count: activeListings ?? 0 },
     { module: "Jobs", count: activeJobs ?? 0 },
-    { module: "Housing", count: activeHousing ?? 0 },
     { module: "Stores", count: activeStores ?? 0 },
     { module: "Opportunities", count: activeOpportunities ?? 0 },
   ];
@@ -213,7 +201,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     pendingApprovals: {
       listings: pendingListings ?? 0,
       jobs: pendingJobs ?? 0,
-      housing: pendingHousing ?? 0,
+      housing: 0,
       stores: pendingStores ?? 0,
       opportunities: pendingOpportunities ?? 0,
     },
