@@ -35,41 +35,38 @@ export default function FeaturePage() {
   const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
-      setUserEmail(user.email || "");
+  async function load() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+    setUserEmail(user.email || "");
 
-      const table = type === "product" ? "store_products" : "listings";
-      const titleCol = type === "product" ? "name" : "title";
+    const table = type === "product" ? "store_products" : "listings";
+    const titleCol = type === "product" ? "name" : "title";
 
-      const { data, error: fetchError } = await supabase
-        .from(table)
-        .select(`id, ${titleCol}, is_featured, featured_until, user_id`)
-        const { data, error: fetchError } = await supabase
-  .from(table)
-  .select(`id, ${titleCol}, is_featured, featured_until, user_id`)
-  .eq("id", id)
-  .single();
+    const { data, error: fetchError } = await supabase
+      .from(table)
+      .select(`id, ${titleCol}, is_featured, featured_until, user_id`)
+      .eq("id", id)
+      .single();
 
-      if (fetchError || !data) {
-        setError("Listing not found or you don't have permission to feature it.");
-        setLoading(false);
-        return;
-      }
-
-      setProduct({
-        id: data.id,
-        title: data[titleCol as keyof typeof data] as string,
-        is_featured: data.is_featured,
-        featured_until: data.featured_until,
-        user_id: data.user_id,
-      });
+    if (fetchError || !data) {
+      setError("Listing not found or you don't have permission to feature it.");
       setLoading(false);
+      return;
     }
-    load();
-  }, [id, type, router]);
+
+    setProduct({
+      id: data.id,
+      title: data[titleCol as keyof typeof data] as string,
+      is_featured: data.is_featured,
+      featured_until: data.featured_until,
+      user_id: data.user_id,
+    });
+    setLoading(false);
+  }
+  load();
+}, [id, type, router]);
 
   function initializePaystack(plan: typeof PLANS[0]) {
     if (paying) return;
