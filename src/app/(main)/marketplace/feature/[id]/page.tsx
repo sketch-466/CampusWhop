@@ -47,9 +47,11 @@ export default function FeaturePage() {
       const { data, error: fetchError } = await supabase
         .from(table)
         .select(`id, ${titleCol}, is_featured, featured_until, user_id`)
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .single();
+        const { data, error: fetchError } = await supabase
+  .from(table)
+  .select(`id, ${titleCol}, is_featured, featured_until, user_id`)
+  .eq("id", id)
+  .single();
 
       if (fetchError || !data) {
         setError("Listing not found or you don't have permission to feature it.");
