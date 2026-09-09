@@ -1,9 +1,9 @@
 "use client";
-// v3
+// v4
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getFeatureProduct } from "./actions";
 
 const PLANS = [
   { days: 3, label: "3 Days", subtitle: "Quick boost", price: 500, kobo: 50000 },
@@ -17,7 +17,6 @@ interface Product {
   title: string;
   is_featured: boolean;
   featured_until: string | null;
-  owner_id: string;
 }
 
 export default function FeaturePage() {
@@ -37,71 +36,18 @@ export default function FeaturePage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
-      setUserEmail(user.email || "");
-
-      if (type === "product") {
-        const { data, error: fetchError } = await supabase
-          .from("store_products")
-          .select("id, title, is_featured, featured_until, store_id, stores!inner(owner_id)")
-          .eq("id", id)
-          .single();
-
-        if (fetchError || !data) {
-          setError("Product not found or you don't have permission to feature it.");
-          setLoading(false);
-          return;
-        }
-
-        const store = Array.isArray(data.stores) ? data.stores[0] : data.stores;
-        if (store?.owner_id !== user.id) {
-          setError("You don't have permission to feature this product.");
-          setLoading(false);
-          return;
-        }
-
-        setProduct({
-          id: data.id,
-          title: data.title,
-          is_featured: data.is_featured,
-          featured_until: data.featured_until,
-          owner_id: store.owner_id,
-        });
-
-      } else {
-        const { data, error: fetchError } = await supabase
-          .from("listings")
-          .select("id, title, is_featured, featured_until, seller_id")
-          .eq("id", id)
-          .single();
-
-        if (fetchError || !data) {
-          setError("Listing not found or you don't have permission to feature it.");
-          setLoading(false);
-          return;
-        }
-
-        if (data.seller_id !== user.id) {
-          setError("You don't have permission to feature this listing.");
-          setLoading(false);
-          return;
-        }
-
-        setProduct({
-          id: data.id,
-          title: data.title,
-          is_featured: data.is_featured,
-          featured_until: data.featured_until,
-          owner_id: data.seller_id,
-        });
+      const result = await getFeatureProduct(id, type);
+      if (!result.success || !result.product) {
+        setError(result.error || "Listing not found.");
+        setLoading(false);
+        return;
       }
-
+      setProduct(result.product);
+      setUserEmail(result.email || "");
       setLoading(false);
     }
     load();
-  }, [id, type, router]);
+  }, [id, type]);
 
   function initializePaystack(plan: typeof PLANS[0]) {
     if (paying) return;
@@ -113,11 +59,7 @@ export default function FeaturePage() {
       amount: plan.kobo,
       currency: "NGN",
       ref: `feature_${id}_${plan.days}_${Date.now()}`,
-      metadata: {
-        product_id: id,
-        product_type: type,
-        days: plan.days,
-      },
+      metadata: { product_id: id, product_type: type, days: plan.days },
       callback: async (response: { reference: string }) => {
         try {
           const res = await fetch("/api/feature/verify", {
@@ -137,14 +79,12 @@ export default function FeaturePage() {
             setError(result.error || "Payment verified but activation failed. Contact support.");
           }
         } catch {
-          setError("Something went wrong after payment. Contact support with your reference: " + response.reference);
+          setError("Something went wrong. Contact support with ref: " + response.reference);
         } finally {
           setPaying(false);
         }
       },
-      onClose: () => {
-        setPaying(false);
-      },
+      onClose: () => setPaying(false),
     });
 
     handler.openIframe();
@@ -211,7 +151,7 @@ export default function FeaturePage() {
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
               <p className="text-amber-400 text-sm font-medium">⭐ Currently featured</p>
               <p className="text-zinc-400 text-xs mt-1">
-                Expires {new Date(product!.featured_until!).toLocaleDateString("en-NG", { dateStyle: "medium" })}. Purchasing a new plan will extend from that date.
+                Expires {new Date(product!.featured_until!).toLocaleDateString("en-NG", { dateStyle: "medium" })}. A new plan will extend from that date.
               </p>
             </div>
           )}
