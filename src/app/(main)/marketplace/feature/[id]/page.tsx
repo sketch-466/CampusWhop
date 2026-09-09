@@ -1,5 +1,6 @@
 "use client";
-// v2
+// v3
+
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +17,7 @@ interface Product {
   title: string;
   is_featured: boolean;
   featured_until: string | null;
-  user_id: string;
+  owner_id: string;
 }
 
 export default function FeaturePage() {
@@ -24,7 +25,7 @@ export default function FeaturePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const id = params.id as string;
-  const type = searchParams.get("type") || "listing"; // "listing" | "product"
+  const type = searchParams.get("type") || "listing";
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,38 +36,72 @@ export default function FeaturePage() {
   const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-  async function load() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
-    setUserEmail(user.email || "");
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+      setUserEmail(user.email || "");
 
-    const table = type === "product" ? "store_products" : "listings";
-    const titleCol = type === "product" ? "name" : "title";
+      if (type === "product") {
+        const { data, error: fetchError } = await supabase
+          .from("store_products")
+          .select("id, title, is_featured, featured_until, store_id, stores!inner(owner_id)")
+          .eq("id", id)
+          .single();
 
-    const { data, error: fetchError } = await supabase
-      .from(table)
-      .select(`id, ${titleCol}, is_featured, featured_until, user_id`)
-      .eq("id", id)
-      .single();
+        if (fetchError || !data) {
+          setError("Product not found or you don't have permission to feature it.");
+          setLoading(false);
+          return;
+        }
 
-    if (fetchError || !data) {
-      setError("Listing not found or you don't have permission to feature it.");
+        const store = Array.isArray(data.stores) ? data.stores[0] : data.stores;
+        if (store?.owner_id !== user.id) {
+          setError("You don't have permission to feature this product.");
+          setLoading(false);
+          return;
+        }
+
+        setProduct({
+          id: data.id,
+          title: data.title,
+          is_featured: data.is_featured,
+          featured_until: data.featured_until,
+          owner_id: store.owner_id,
+        });
+
+      } else {
+        const { data, error: fetchError } = await supabase
+          .from("listings")
+          .select("id, title, is_featured, featured_until, seller_id")
+          .eq("id", id)
+          .single();
+
+        if (fetchError || !data) {
+          setError("Listing not found or you don't have permission to feature it.");
+          setLoading(false);
+          return;
+        }
+
+        if (data.seller_id !== user.id) {
+          setError("You don't have permission to feature this listing.");
+          setLoading(false);
+          return;
+        }
+
+        setProduct({
+          id: data.id,
+          title: data.title,
+          is_featured: data.is_featured,
+          featured_until: data.featured_until,
+          owner_id: data.seller_id,
+        });
+      }
+
       setLoading(false);
-      return;
     }
-
-    setProduct({
-      id: data.id,
-      title: data[titleCol as keyof typeof data] as string,
-      is_featured: data.is_featured,
-      featured_until: data.featured_until,
-      user_id: data.user_id,
-    });
-    setLoading(false);
-  }
-  load();
-}, [id, type, router]);
+    load();
+  }, [id, type, router]);
 
   function initializePaystack(plan: typeof PLANS[0]) {
     if (paying) return;
@@ -165,7 +200,6 @@ export default function FeaturePage() {
       <div className="min-h-screen bg-[#0A0F0D] text-white">
         <div className="max-w-lg mx-auto px-4 py-8">
 
-          {/* Header */}
           <button onClick={() => router.back()} className="text-zinc-500 text-sm mb-6 flex items-center gap-1 hover:text-zinc-300 transition">
             ← Back
           </button>
@@ -173,7 +207,6 @@ export default function FeaturePage() {
           <h1 className="text-2xl font-bold text-white mb-1">Feature this Listing</h1>
           <p className="text-zinc-400 text-sm mb-6 truncate">{product?.title}</p>
 
-          {/* Already featured banner */}
           {isAlreadyFeatured && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
               <p className="text-amber-400 text-sm font-medium">⭐ Currently featured</p>
@@ -183,7 +216,6 @@ export default function FeaturePage() {
             </div>
           )}
 
-          {/* Benefits */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">What Featuring Does</p>
             {[
@@ -199,7 +231,6 @@ export default function FeaturePage() {
             ))}
           </div>
 
-          {/* Plans */}
           <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Choose a Duration</p>
           <div className="space-y-3 mb-8">
             {PLANS.map((plan) => (
@@ -235,14 +266,12 @@ export default function FeaturePage() {
             ))}
           </div>
 
-          {/* Error */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          {/* CTA */}
           <button
             disabled={!selectedPlan || paying}
             onClick={() => {

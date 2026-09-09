@@ -3,6 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
+const PLAN_AMOUNTS: Record<number, number> = {
+  3: 50000,
+  7: 100000,
+  14: 180000,
+  30: 300000,
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { reference, product_id, product_type, days } = await req.json();
@@ -15,19 +22,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid product type." }, { status: 400 });
     }
 
-    const validDays = [3, 7, 14, 30];
-    if (!validDays.includes(Number(days))) {
+    if (!PLAN_AMOUNTS[Number(days)]) {
       return NextResponse.json({ success: false, error: "Invalid plan duration." }, { status: 400 });
     }
 
     // Verify with Paystack
     const paystackRes = await fetch(
       `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` } }
     );
 
     const paystackData = await paystackRes.json();
@@ -36,26 +38,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Payment not confirmed by Paystack." }, { status: 402 });
     }
 
-    // Validate amount matches plan
-    const PLAN_AMOUNTS: Record<number, number> = {
-      3: 50000,
-      7: 100000,
-      14: 180000,
-      30: 300000,
-    };
-
-    const expectedKobo = PLAN_AMOUNTS[Number(days)];
-    const paidKobo = paystackData.data?.amount;
-
-    if (paidKobo < expectedKobo) {
+    if (paystackData.data?.amount < PLAN_AMOUNTS[Number(days)]) {
       return NextResponse.json({ success: false, error: "Payment amount does not match selected plan." }, { status: 402 });
     }
 
-    // Update DB
     const supabase = createAdminClient();
     const table = product_type === "product" ? "store_products" : "listings";
 
-    // If already featured and not expired, extend from featured_until; otherwise from now
+    // Get current featured status to handle extension
     const { data: existing } = await supabase
       .from(table)
       .select("featured_until, is_featured")
@@ -82,10 +72,14 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       console.error("DB update error:", updateError);
-      return NextResponse.json({ success: false, error: "Payment received but activation failed. Contact support." }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "Payment received but activation failed. Contact support." },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });
+
   } catch (err) {
     console.error("Feature verify error:", err);
     return NextResponse.json({ success: false, error: "Server error." }, { status: 500 });
