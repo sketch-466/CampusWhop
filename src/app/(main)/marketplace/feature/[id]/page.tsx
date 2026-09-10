@@ -49,46 +49,67 @@ export default function FeaturePage() {
     load();
   }, [id, type]);
 
-  function initializePaystack(plan: typeof PLANS[0]) {
-    if (paying) return;
-    setPaying(true);
+  function loadPaystackScript(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).PaystackPop) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.onload = () => resolve();
+    document.body.appendChild(script);
+  });
+}
 
-    const handler = (window as any).PaystackPop.setup({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-      email: userEmail,
-      amount: plan.kobo,
-      currency: "NGN",
-      ref: `feature_${id}_${plan.days}_${Date.now()}`,
-      metadata: { product_id: id, product_type: type, days: plan.days },
-      callback: async (response: { reference: string }) => {
-        try {
-          const res = await fetch("/api/feature/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              reference: response.reference,
-              product_id: id,
-              product_type: type,
-              days: plan.days,
-            }),
-          });
-          const result = await res.json();
-          if (result.success) {
-            setSuccess(true);
-          } else {
-            setError(result.error || "Payment verified but activation failed. Contact support.");
-          }
-        } catch {
-          setError("Something went wrong. Contact support with ref: " + response.reference);
-        } finally {
-          setPaying(false);
-        }
-      },
-      onClose: () => setPaying(false),
-    });
+async function initializePaystack(plan: typeof PLANS[0]) {
+  if (paying) return;
+  setPaying(true);
 
-    handler.openIframe();
+  await loadPaystackScript();
+
+  if (!(window as any).PaystackPop) {
+    setError("Payment system failed to load. Please refresh and try again.");
+    setPaying(false);
+    return;
   }
+
+  const handler = (window as any).PaystackPop.setup({
+    key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+    email: userEmail,
+    amount: plan.kobo,
+    currency: "NGN",
+    ref: `feature_${id}_${plan.days}_${Date.now()}`,
+    metadata: { product_id: id, product_type: type, days: plan.days },
+    callback: async (response: { reference: string }) => {
+      try {
+        const res = await fetch("/api/feature/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reference: response.reference,
+            product_id: id,
+            product_type: type,
+            days: plan.days,
+          }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          setSuccess(true);
+        } else {
+          setError(result.error || "Payment verified but activation failed. Contact support.");
+        }
+      } catch {
+        setError("Something went wrong. Contact support with ref: " + response.reference);
+      } finally {
+        setPaying(false);
+      }
+    },
+    onClose: () => setPaying(false),
+  });
+
+  handler.openIframe();
+}
 
   if (loading) {
     return (
@@ -136,7 +157,7 @@ export default function FeaturePage() {
 
   return (
     <>
-      <script src="https://js.paystack.co/v1/inline.js" async />
+      
       <div className="min-h-screen bg-[#0A0F0D] text-white">
         <div className="max-w-lg mx-auto px-4 py-8">
 
