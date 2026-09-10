@@ -1,9 +1,9 @@
 "use client";
-// v5
+// v6
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { getFeatureProduct } from "./actions";
+import { getFeatureProduct, initializeFeaturePayment } from "./actions";
 
 const PLANS = [
   { days: 3, label: "3 Days", subtitle: "Quick boost", price: 500, kobo: 50000 },
@@ -30,9 +30,7 @@ export default function FeaturePage() {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -43,80 +41,25 @@ export default function FeaturePage() {
         return;
       }
       setProduct(result.product);
-      setUserEmail(result.email || "");
       setLoading(false);
     }
     load();
   }, [id, type]);
 
-  function loadPaystackScript(): Promise<void> {
-    return new Promise((resolve) => {
-      if ((window as any).PaystackPop) {
-        resolve();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://js.paystack.co/v1/inline.js";
-      script.onload = () => resolve();
-      document.body.appendChild(script);
-    });
-  }
-
-  async function initializePaystack(plan: typeof PLANS[0]) {
-    if (paying) return;
+  async function handlePayment() {
+    if (!selectedPlan || paying) return;
     setPaying(true);
+    setError("");
 
-    try {
-      await loadPaystackScript();
+    const result = await initializeFeaturePayment(id, type, selectedPlan);
 
-      const PaystackPop = (window as any).PaystackPop;
-
-      if (!PaystackPop) {
-        setError("Payment system failed to load. Please refresh and try again.");
-        setPaying(false);
-        return;
-      }
-
-      PaystackPop.newTransaction({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-        email: userEmail,
-        amount: plan.kobo,
-        currency: "NGN",
-        ref: `feature_${id}_${plan.days}_${Date.now()}`,
-        metadata: { product_id: id, product_type: type, days: plan.days },
-        onSuccess: async (response: { reference: string }) => {
-          try {
-            const res = await fetch("/api/feature/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                reference: response.reference,
-                product_id: id,
-                product_type: type,
-                days: plan.days,
-              }),
-            });
-            const result = await res.json();
-            if (result.success) {
-              setSuccess(true);
-            } else {
-              setError(result.error || "Activation failed. Contact support.");
-            }
-          } catch {
-            setError("Something went wrong. Save this ref: " + response.reference);
-          } finally {
-            setPaying(false);
-          }
-        },
-        onCancel: () => {
-          setPaying(false);
-        },
-      });
-
-    } catch {
-      setError("Failed to initialize payment. Please try again.");
+    if (result.error || !result.url) {
+      setError(result.error || "Failed to initialize payment.");
       setPaying(false);
+      return;
     }
+
+    window.location.href = result.url;
   }
 
   if (loading) {
@@ -133,26 +76,6 @@ export default function FeaturePage() {
         <div className="text-center">
           <p className="text-red-400 mb-4">{error}</p>
           <button onClick={() => router.back()} className="text-emerald-400 underline text-sm">Go back</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[#0A0F0D] flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
-          <div className="text-5xl mb-4">⭐</div>
-          <h1 className="text-2xl font-bold text-white mb-2">You're Featured!</h1>
-          <p className="text-zinc-400 mb-6 text-sm">
-            <span className="text-white font-medium">{product?.title}</span> is now pinned to the top of the marketplace and shown on the homepage.
-          </p>
-          <button
-            onClick={() => router.push("/marketplace")}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-xl transition"
-          >
-            View Marketplace
-          </button>
         </div>
       </div>
     );
@@ -244,14 +167,11 @@ export default function FeaturePage() {
 
         <button
           disabled={!selectedPlan || paying}
-          onClick={() => {
-            const plan = PLANS.find((p) => p.days === selectedPlan);
-            if (plan) initializePaystack(plan);
-          }}
+          onClick={handlePayment}
           className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition text-base"
         >
           {paying
-            ? "Opening payment..."
+            ? "Redirecting to payment..."
             : selectedPlan
             ? `Feature for ₦${PLANS.find((p) => p.days === selectedPlan)?.price.toLocaleString()}`
             : "Select a plan to continue"}

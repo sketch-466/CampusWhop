@@ -24,10 +24,7 @@ async function getUser() {
 export async function getFeatureProduct(id: string, type: string) {
   try {
     const user = await getUser();
-
-    if (!user) {
-      return { success: false, error: "Not authenticated." };
-    }
+    if (!user) return { success: false, error: "Not authenticated." };
 
     const admin = createAdminClient();
 
@@ -38,15 +35,10 @@ export async function getFeatureProduct(id: string, type: string) {
         .eq("id", id)
         .single();
 
-      if (error || !data) {
-        return { success: false, error: "Product not found." };
-      }
+      if (error || !data) return { success: false, error: "Product not found." };
 
       const store = Array.isArray(data.stores) ? data.stores[0] : data.stores as any;
-
-      if (store?.owner_id !== user.id) {
-        return { success: false, error: "You don't own this product." };
-      }
+      if (store?.owner_id !== user.id) return { success: false, error: "You don't own this product." };
 
       return {
         success: true,
@@ -66,13 +58,8 @@ export async function getFeatureProduct(id: string, type: string) {
         .eq("id", id)
         .single();
 
-      if (error || !data) {
-        return { success: false, error: "Listing not found." };
-      }
-
-      if (data.seller_id !== user.id) {
-        return { success: false, error: "You don't own this listing." };
-      }
+      if (error || !data) return { success: false, error: "Listing not found." };
+      if (data.seller_id !== user.id) return { success: false, error: "You don't own this listing." };
 
       return {
         success: true,
@@ -89,5 +76,56 @@ export async function getFeatureProduct(id: string, type: string) {
   } catch (err) {
     console.error("getFeatureProduct error:", err);
     return { success: false, error: "Server error." };
+  }
+}
+
+const PLAN_AMOUNTS: Record<string, number> = {
+  "3": 50000,
+  "7": 100000,
+  "14": 180000,
+  "30": 300000,
+};
+
+export async function initializeFeaturePayment(
+  product_id: string,
+  product_type: string,
+  days: number
+) {
+  try {
+    const user = await getUser();
+    if (!user) return { error: "Not authenticated." };
+
+    const amount = PLAN_AMOUNTS[String(days)];
+    if (!amount) return { error: "Invalid plan." };
+
+    const reference = `cw_feature_${product_id}_${days}_${Date.now()}`;
+
+    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: user.email,
+        amount,
+        reference,
+        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/marketplace/feature/callback?reference=${reference}`,
+        metadata: {
+          product_id,
+          product_type,
+          days,
+        },
+      }),
+    });
+
+    const paystackData = await paystackRes.json();
+    if (!paystackData.status) return { error: "Failed to initialize payment." };
+
+    return { url: paystackData.data.authorization_url };
+
+  } catch (err) {
+    console.error("initializeFeaturePayment error:", err);
+    return { error: "Server error." };
   }
 }
