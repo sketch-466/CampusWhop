@@ -45,6 +45,8 @@ export async function updateSession(request: NextRequest) {
     '/jobs',
     '/novels',
 '/coins',
+    '/api/webhooks/paystack',
+    '/api/feature/verify',
   ]
 
   // Routes that are valid onboarding destinations — never gate these
