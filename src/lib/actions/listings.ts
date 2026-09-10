@@ -84,10 +84,10 @@ export async function uploadListingImage(formData: FormData) {
     return { error: "Only JPG, PNG, and WEBP images are allowed" };
   }
 
-  const maxSize = 5 * 1024 * 1024;
-  if (file.size > maxSize) {
-    return { error: "File must be less than 5MB" };
-  }
+  const maxSize = 10 * 1024 * 1024;
+if (file.size > maxSize) {
+  return { error: "File must be less than 10MB" };
+}
 
   const supabase = await createClient();
 
