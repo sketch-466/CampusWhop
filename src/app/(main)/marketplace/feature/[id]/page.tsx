@@ -73,6 +73,9 @@ async function initializePaystack(plan: typeof PLANS[0]) {
     setPaying(false);
     return;
   }
+  
+  console.log("PaystackPop available:", !!(window as any).PaystackPop);
+alert("PaystackPop: " + !!(window as any).PaystackPop);
 
   const handler = (window as any).PaystackPop.setup({
     key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
