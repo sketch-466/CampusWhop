@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { storeSchema, storeProductSchema } from "@/lib/validations/store";
 import { revalidatePath } from "next/cache";
 import { uploadToB2, generateFileName } from "@/lib/storage/b2";
@@ -58,15 +59,8 @@ function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
 
 export async function createStore(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { success: false, error: "You must be logged in to create a store" };
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "You must be logged in to create a store" };
 
   const { data: existingStore } = await supabase
     .from("stores")
@@ -74,9 +68,7 @@ export async function createStore(formData: FormData): Promise<ActionResult> {
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (existingStore) {
-    return { success: false, error: "You already have a store. Only one store per account is allowed." };
-  }
+  if (existingStore) return { success: false, error: "You already have a store. Only one store per account is allowed." };
 
   const rawData = {
     store_name: formData.get("store_name") as string,
@@ -88,13 +80,9 @@ export async function createStore(formData: FormData): Promise<ActionResult> {
   };
 
   const parsed = storeSchema.safeParse(rawData);
-
   if (!parsed.success) {
     const firstError = parsed.error.errors[0];
-    return {
-      success: false,
-      error: `${firstError.path.join(".")}: ${firstError.message}`,
-    };
+    return { success: false, error: `${firstError.path.join(".")}: ${firstError.message}` };
   }
 
   const data = parsed.data;
@@ -105,9 +93,7 @@ export async function createStore(formData: FormData): Promise<ActionResult> {
     .eq("slug", data.slug)
     .maybeSingle();
 
-  if (slugExists) {
-    return { success: false, error: "This slug is already taken. Try another one." };
-  }
+  if (slugExists) return { success: false, error: "This slug is already taken. Try another one." };
 
   const { data: store, error: insertError } = await supabase
     .from("stores")
@@ -125,9 +111,7 @@ export async function createStore(formData: FormData): Promise<ActionResult> {
     .single();
 
   if (insertError) {
-    if (insertError.code === "23505") {
-      return { success: false, error: "This slug is already taken. Try another one." };
-    }
+    if (insertError.code === "23505") return { success: false, error: "This slug is already taken. Try another one." };
     return { success: false, error: "Failed to create store. Please try again." };
   }
 
@@ -137,15 +121,8 @@ export async function createStore(formData: FormData): Promise<ActionResult> {
 
 export async function updateStore(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { success: false, error: "You must be logged in" };
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "You must be logged in" };
 
   const storeId = formData.get("store_id") as string;
 
@@ -159,13 +136,9 @@ export async function updateStore(formData: FormData): Promise<ActionResult> {
   };
 
   const parsed = storeSchema.safeParse(rawData);
-
   if (!parsed.success) {
     const firstError = parsed.error.errors[0];
-    return {
-      success: false,
-      error: `${firstError.path.join(".")}: ${firstError.message}`,
-    };
+    return { success: false, error: `${firstError.path.join(".")}: ${firstError.message}` };
   }
 
   const data = parsed.data;
@@ -177,9 +150,7 @@ export async function updateStore(formData: FormData): Promise<ActionResult> {
     .eq("owner_id", user.id)
     .single();
 
-  if (!currentStore) {
-    return { success: false, error: "Store not found" };
-  }
+  if (!currentStore) return { success: false, error: "Store not found" };
 
   if (currentStore.slug !== data.slug) {
     const { data: slugExists } = await supabase
@@ -189,9 +160,7 @@ export async function updateStore(formData: FormData): Promise<ActionResult> {
       .neq("id", storeId)
       .maybeSingle();
 
-    if (slugExists) {
-      return { success: false, error: "This slug is already taken. Try another one." };
-    }
+    if (slugExists) return { success: false, error: "This slug is already taken. Try another one." };
   }
 
   const { error: updateError } = await supabase
@@ -207,9 +176,7 @@ export async function updateStore(formData: FormData): Promise<ActionResult> {
     .eq("id", storeId)
     .eq("owner_id", user.id);
 
-  if (updateError) {
-    return { success: false, error: "Failed to update store. Please try again." };
-  }
+  if (updateError) return { success: false, error: "Failed to update store. Please try again." };
 
   revalidatePath("/store/dashboard");
   revalidatePath(`/store/${data.slug}`);
@@ -218,11 +185,7 @@ export async function updateStore(formData: FormData): Promise<ActionResult> {
 
 export async function getMyStore() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { store: null };
 
   const { data, error } = await supabase
@@ -232,7 +195,6 @@ export async function getMyStore() {
     .maybeSingle();
 
   if (error) return { store: null };
-
   return { store: data };
 }
 
@@ -243,16 +205,14 @@ export async function getStoreBySlug(slug: string): Promise<{ store: StoreWithOw
     .from("stores")
     .select(`
       *,
-      owner:profiles!stores_owner_id_fkey(full_name, avatar_url, university, reputation_score, total_reviews)
+      owner:public_profiles!stores_owner_id_fkey(full_name, avatar_url, university, reputation_score, total_reviews)
     `)
     .eq("slug", slug)
     .eq("status", "active")
     .eq("is_deleted", false)
     .single();
 
-  if (error || !data) {
-    return { store: null, error: "Store not found" };
-  }
+  if (error || !data) return { store: null, error: "Store not found" };
 
   const store: StoreWithOwner = {
     ...data,
@@ -264,7 +224,6 @@ export async function getStoreBySlug(slug: string): Promise<{ store: StoreWithOw
 
 export async function checkSlugAvailability(slug: string): Promise<{ available: boolean; error?: string }> {
   const supabase = await createClient();
-
   const { data } = await supabase
     .from("stores")
     .select("id")
@@ -276,15 +235,8 @@ export async function checkSlugAvailability(slug: string): Promise<{ available: 
 
 export async function createStoreProduct(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { success: false, error: "You must be logged in" };
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "You must be logged in" };
 
   const { data: store } = await supabase
     .from("stores")
@@ -292,13 +244,8 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
     .eq("owner_id", user.id)
     .single();
 
-  if (!store) {
-    return { success: false, error: "You need to create a store first" };
-  }
-
-  if (store.status !== "active") {
-    return { success: false, error: "Your store must be approved before you can add products" };
-  }
+  if (!store) return { success: false, error: "You need to create a store first" };
+  if (store.status !== "active") return { success: false, error: "Your store must be approved before you can add products" };
 
   const productType = formData.get("product_type") as string;
 
@@ -317,13 +264,9 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
   };
 
   const parsed = storeProductSchema.safeParse(rawData);
-
   if (!parsed.success) {
     const firstError = parsed.error.errors[0];
-    return {
-      success: false,
-      error: `${firstError.path.join(".")}: ${firstError.message}`,
-    };
+    return { success: false, error: `${firstError.path.join(".")}: ${firstError.message}` };
   }
 
   const data = parsed.data;
@@ -347,9 +290,7 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
     .select("id")
     .single();
 
-  if (insertError) {
-    return { success: false, error: "Failed to create product. Please try again." };
-  }
+  if (insertError) return { success: false, error: "Failed to create product. Please try again." };
 
   revalidatePath("/store/dashboard");
   revalidatePath(`/store/${store.id}`);
@@ -358,15 +299,8 @@ export async function createStoreProduct(formData: FormData): Promise<ActionResu
 
 export async function updateStoreProduct(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { success: false, error: "You must be logged in" };
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "You must be logged in" };
 
   const productId = formData.get("product_id") as string;
   const productType = formData.get("product_type") as string;
@@ -386,13 +320,9 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
   };
 
   const parsed = storeProductSchema.safeParse(rawData);
-
   if (!parsed.success) {
     const firstError = parsed.error.errors[0];
-    return {
-      success: false,
-      error: `${firstError.path.join(".")}: ${firstError.message}`,
-    };
+    return { success: false, error: `${firstError.path.join(".")}: ${firstError.message}` };
   }
 
   const data = parsed.data;
@@ -423,9 +353,7 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
     })
     .eq("id", productId);
 
-  if (updateError) {
-    return { success: false, error: "Failed to update product. Please try again." };
-  }
+  if (updateError) return { success: false, error: "Failed to update product. Please try again." };
 
   revalidatePath("/store/dashboard");
   return { success: true };
@@ -433,14 +361,8 @@ export async function updateStoreProduct(formData: FormData): Promise<ActionResu
 
 export async function archiveStoreProduct(productId: string): Promise<ActionResult> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
 
   const { data: product } = await supabase
     .from("store_products")
@@ -461,9 +383,7 @@ export async function archiveStoreProduct(productId: string): Promise<ActionResu
     })
     .eq("id", productId);
 
-  if (error) {
-    return { success: false, error: "Failed to archive product" };
-  }
+  if (error) return { success: false, error: "Failed to archive product" };
 
   revalidatePath("/store/dashboard");
   revalidatePath(`/store/${(product.stores as any)?.slug}`);
@@ -485,20 +405,13 @@ export async function getStoreProducts(storeId: string, includePending = false) 
   }
 
   const { data, error } = await query;
-
-  if (error) {
-    return { products: [] as StoreProduct[], error: "Failed to fetch products" };
-  }
-
+  if (error) return { products: [] as StoreProduct[], error: "Failed to fetch products" };
   return { products: (data || []) as StoreProduct[] };
 }
 
 export async function getStoreProductById(productId: string) {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data, error } = await supabase
     .from("store_products")
@@ -509,9 +422,7 @@ export async function getStoreProductById(productId: string) {
     .eq("id", productId)
     .single();
 
-  if (error || !data) {
-    return { product: null, error: "Product not found" };
-  }
+  if (error || !data) return { product: null, error: "Product not found" };
 
   const store = normalizeRelation(data.store as any);
   const isOwner = user?.id === store?.owner_id;
@@ -532,30 +443,17 @@ export async function getStoreProductById(productId: string) {
 
 export async function uploadStoreImage(formData: FormData) {
   const file = formData.get("image") as File;
-
-  if (!file) {
-    return { success: false, error: "No file provided" };
-  }
+  if (!file) return { success: false, error: "No file provided" };
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-  if (!allowedTypes.includes(file.type)) {
-    return { success: false, error: "Only JPG, PNG, and WEBP images are allowed" };
-  }
+  if (!allowedTypes.includes(file.type)) return { success: false, error: "Only JPG, PNG, and WEBP images are allowed" };
 
   const maxSize = 5 * 1024 * 1024;
-  if (file.size > maxSize) {
-    return { success: false, error: "File must be less than 5MB" };
-  }
+  if (file.size > maxSize) return { success: false, error: "File must be less than 5MB" };
 
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -571,24 +469,19 @@ export async function uploadStoreImage(formData: FormData) {
 
 export async function getPendingStores() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) {
-    return { error: "Unauthorized" };
-  }
+  if (!profile?.is_admin) return { error: "Unauthorized" };
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("stores")
     .select(`
       *,
@@ -598,33 +491,25 @@ export async function getPendingStores() {
     .eq("is_deleted", false)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return { error: "Failed to fetch pending stores" };
-  }
-
+  if (error) return { error: "Failed to fetch pending stores" };
   return { stores: data || [] };
 }
 
 export async function getPendingStoreProducts() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) {
-    return { error: "Unauthorized" };
-  }
+  if (!profile?.is_admin) return { error: "Unauthorized" };
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("store_products")
     .select(`
       *,
@@ -634,9 +519,6 @@ export async function getPendingStoreProducts() {
     .eq("is_deleted", false)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return { error: "Failed to fetch pending products" };
-  }
-
+  if (error) return { error: "Failed to fetch pending products" };
   return { products: data || [] };
 }

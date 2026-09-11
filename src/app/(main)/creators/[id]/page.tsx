@@ -10,7 +10,6 @@ import {
   Twitter,
   Linkedin,
   MessageCircle,
-  Phone,
   CheckCircle2,
   Clock,
 } from "lucide-react";
@@ -32,10 +31,11 @@ export default async function CreatorProfilePage({
   const { id } = await params;
   const supabase = await createClient();
 
+  // Use public_profiles — never exposes phone, matric, email, is_admin
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select(
-      "id, full_name, avatar_url, university, bio, tagline, creator_type, skills, portfolio_url, twitter_url, linkedin_url, whatsapp_number, phone_number, is_verified, is_founding_creator, reputation_score, total_reviews"
+      "id, full_name, avatar_url, university, bio, tagline, creator_type, skills, portfolio_url, twitter_url, linkedin_url, whatsapp_number, is_verified, is_founding_creator, reputation_score, total_reviews"
     )
     .eq("id", id)
     .single();
@@ -104,7 +104,6 @@ export default async function CreatorProfilePage({
       {/* ── HERO ── */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6">
 
-        {/* Founding creator banner */}
         {profile.is_founding_creator && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
             <span className="text-base">🌟</span>
@@ -225,12 +224,6 @@ export default async function CreatorProfilePage({
               <Linkedin className="h-4 w-4" />
               LinkedIn
             </a>
-          )}
-          {profile.phone_number && (
-            <span className="flex items-center gap-1.5 text-sm text-zinc-400">
-              <Phone className="h-4 w-4 text-emerald-500" />
-              {profile.phone_number}
-            </span>
           )}
         </div>
       </div>

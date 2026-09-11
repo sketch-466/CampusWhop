@@ -25,7 +25,7 @@ export default async function CreatorsPage({
   const supabase = await createClient();
 
   let query = supabase
-    .from("profiles")
+    .from("public_profiles")
     .select(
       "id, full_name, avatar_url, university, tagline, creator_type, skills, portfolio_url, twitter_url, linkedin_url, is_verified, reputation_score, total_reviews"
     )

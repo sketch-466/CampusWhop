@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { listingSchema, type ListingInput } from "@/lib/validations/listing";
 import { revalidatePath } from "next/cache";
 import { uploadToB2, generateFileName } from "@/lib/storage/b2";
@@ -31,16 +32,9 @@ export async function createListing(
   }
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  // Digital listings must have a file
   if (validated.data.product_type === "digital" && !digitalFileUrl) {
     return { error: "Please upload a file for your digital product" };
   }
@@ -63,9 +57,7 @@ export async function createListing(
     .select()
     .single();
 
-  if (error) {
-    return { error: "Failed to create listing" };
-  }
+  if (error) return { error: "Failed to create listing" };
 
   revalidatePath("/marketplace");
   revalidatePath("/marketplace/my-listings");
@@ -74,10 +66,7 @@ export async function createListing(
 
 export async function uploadListingImage(formData: FormData) {
   const file = formData.get("image") as File;
-
-  if (!file) {
-    return { error: "No file provided" };
-  }
+  if (!file) return { error: "No file provided" };
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!allowedTypes.includes(file.type)) {
@@ -85,19 +74,11 @@ export async function uploadListingImage(formData: FormData) {
   }
 
   const maxSize = 10 * 1024 * 1024;
-if (file.size > maxSize) {
-  return { error: "File must be less than 10MB" };
-}
+  if (file.size > maxSize) return { error: "File must be less than 10MB" };
 
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -115,26 +96,14 @@ if (file.size > maxSize) {
 
 export async function uploadDigitalFile(formData: FormData) {
   const file = formData.get("file") as File;
+  if (!file) return { error: "No file provided" };
 
-  if (!file) {
-    return { error: "No file provided" };
-  }
-
-  // Max 100MB for digital files
   const maxSize = 100 * 1024 * 1024;
-  if (file.size > maxSize) {
-    return { error: "File must be less than 100MB" };
-  }
+  if (file.size > maxSize) return { error: "File must be less than 100MB" };
 
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -161,21 +130,15 @@ export async function getActiveListings(filters?: {
     .from("listings")
     .select(`
       *,
-      seller:profiles(full_name, avatar_url, university, reputation_score, total_reviews, is_founding_creator)
+      seller:public_profiles(full_name, avatar_url, university, reputation_score, total_reviews, is_founding_creator)
     `)
     .eq("status", "active")
     .is("deleted_at", null)
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (filters?.category) {
-    query = query.eq("category", filters.category);
-  }
-
-  if (filters?.product_type) {
-    query = query.eq("product_type", filters.product_type);
-  }
-
+  if (filters?.category) query = query.eq("category", filters.category);
+  if (filters?.product_type) query = query.eq("product_type", filters.product_type);
   if (filters?.search) {
     query = query.textSearch("title", filters.search, {
       type: "websearch",
@@ -184,10 +147,7 @@ export async function getActiveListings(filters?: {
   }
 
   const { data, error } = await query;
-
-  if (error) {
-    return { error: "Failed to fetch listings" };
-  }
+  if (error) return { error: "Failed to fetch listings" };
 
   const listings = (data || []).map((item) => ({
     ...item,
@@ -201,23 +161,18 @@ export async function getActiveListings(filters?: {
 
 export async function getListingById(id: string) {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data, error } = await supabase
     .from("listings")
     .select(`
       *,
-      seller:profiles(full_name, avatar_url, university, matric_number, reputation_score, total_reviews)
+      seller:public_profiles(full_name, avatar_url, university, reputation_score, total_reviews)
     `)
     .eq("id", id)
     .single();
 
-  if (error || !data) {
-    return { error: "Listing not found" };
-  }
+  if (error || !data) return { error: "Listing not found" };
 
   if (data.status !== "active" && data.seller_id !== user?.id) {
     return { error: "Listing not available" };
@@ -242,14 +197,8 @@ export async function getListingById(id: string) {
 
 export async function getUserListings() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const { data, error } = await supabase
     .from("listings")
@@ -258,23 +207,14 @@ export async function getUserListings() {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return { error: "Failed to fetch listings" };
-  }
-
+  if (error) return { error: "Failed to fetch listings" };
   return { listings: data || [] };
 }
 
 export async function deleteListing(id: string) {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
     .from("listings")
@@ -285,9 +225,7 @@ export async function deleteListing(id: string) {
     .eq("id", id)
     .eq("seller_id", user.id);
 
-  if (error) {
-    return { error: "Failed to delete listing" };
-  }
+  if (error) return { error: "Failed to delete listing" };
 
   revalidatePath("/marketplace/my-listings");
   return { success: true };
@@ -295,26 +233,20 @@ export async function deleteListing(id: string) {
 
 export async function getPendingListings() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const { data: profile } = await supabase
+  // Use admin client to bypass RLS for is_admin check
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) {
-    return { error: "Unauthorized" };
-  }
+  if (!profile?.is_admin) return { error: "Unauthorized" };
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("listings")
     .select(`
       *,
@@ -324,42 +256,30 @@ export async function getPendingListings() {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return { error: "Failed to fetch pending listings" };
-  }
-
+  if (error) return { error: "Failed to fetch pending listings" };
   return { listings: data || [] };
 }
 
 export async function approveListing(id: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const { data: profile } = await supabase
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) {
-    return { error: "Unauthorized" };
-  }
+  if (!profile?.is_admin) return { error: "Unauthorized" };
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("listings")
     .update({ status: "active" })
     .eq("id", id);
 
-  if (error) {
-    return { error: "Failed to approve listing" };
-  }
+  if (error) return { error: "Failed to approve listing" };
 
   revalidatePath("/admin/listings");
   revalidatePath("/marketplace");
@@ -368,26 +288,19 @@ export async function approveListing(id: string) {
 
 export async function rejectListing(id: string, reason: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  const { data: profile } = await supabase
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) {
-    return { error: "Unauthorized" };
-  }
+  if (!profile?.is_admin) return { error: "Unauthorized" };
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("listings")
     .update({
       status: "rejected",
@@ -395,9 +308,7 @@ export async function rejectListing(id: string, reason: string) {
     })
     .eq("id", id);
 
-  if (error) {
-    return { error: "Failed to reject listing" };
-  }
+  if (error) return { error: "Failed to reject listing" };
 
   revalidatePath("/admin/listings");
   return { success: true };
