@@ -432,8 +432,7 @@ export async function completeOnboarding(formData: {
     .eq("id", user.id);
 
   if (profileError) {
-  return { error: profileError.message };
-}
+    return { error: profileError.message };
   }
 
   revalidatePath("/", "layout");
