@@ -49,6 +49,8 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
     defaultValues: {
       fullName: defaultFullName,
       university: NIGERIAN_UNIVERSITIES[0],
+      matricNumber: "",
+      phoneNumber: "",
     },
   });
 
@@ -58,22 +60,30 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
     setIsLoading(true);
     setError(undefined);
 
-    // Do NOT wrap in try/catch — redirect() inside server actions throws
-    // a special Next.js error that must not be caught by the client
     const result = await completeOnboarding({
       fullName: data.fullName,
       university: data.university,
       matricNumber: data.matricNumber,
-      phoneNumber: data.phoneNumber,
+      phoneNumber: data.phoneNumber || undefined,
     });
 
-    // If we reach here, the action returned (no redirect happened)
-    // which means there was an error
     if (result?.error) {
-      setError(result.error);
+      // Surface DB-level errors clearly
+      if (result.error.includes("profiles_matric_number_unique")) {
+        setError("This matric number is already registered to another account.");
+      } else if (result.error.includes("profiles_phone_number_unique")) {
+        setError("This phone number is already registered to another account.");
+      } else if (result.error.includes("profiles_matric_format_check")) {
+        setError("Invalid matric number format. Use YYYY/XX/NNNNN (e.g. 2023/EN/32845).");
+      } else if (result.error.includes("profiles_phone_format_check")) {
+        setError("Invalid phone number format. Use 08012345678 or +2348012345678.");
+      } else if (result.error.includes("deleted account")) {
+        setError("This matric number or phone number is associated with a deleted account. Contact support.");
+      } else {
+        setError(result.error);
+      }
       setIsLoading(false);
     }
-    // If redirect() fired on the server, this code never runs
   };
 
   return (
@@ -88,6 +98,8 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+          {/* Full Name */}
           <div className="space-y-2">
             <Label htmlFor="fullName">Full Name</Label>
             <Input
@@ -103,6 +115,7 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
             )}
           </div>
 
+          {/* University */}
           <div className="space-y-2">
             <Label htmlFor="university">University</Label>
             <select
@@ -128,14 +141,19 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
             )}
           </div>
 
+          {/* Matric Number */}
           <div className="space-y-2">
             <Label htmlFor="matricNumber">Matric Number</Label>
             <Input
               id="matricNumber"
-              placeholder="e.g., 2019/123456"
+              placeholder="e.g. 2023/EN/32845"
+              autoCapitalize="characters"
               {...register("matricNumber")}
               className={cn(errors.matricNumber && "border-destructive")}
             />
+            <p className="text-xs text-muted-foreground">
+              Format: YEAR/FACULTY/NUMBER (e.g. 2023/EN/32845)
+            </p>
             {errors.matricNumber && (
               <p className="text-sm text-destructive">
                 {errors.matricNumber.message}
@@ -143,14 +161,23 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
             )}
           </div>
 
+          {/* Phone Number */}
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
+            <Label htmlFor="phoneNumber">
+              Phone Number{" "}
+              <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
             <Input
               id="phoneNumber"
-              placeholder="e.g., +234 801 234 5678"
+              placeholder="e.g. 08012345678"
+              type="tel"
+              inputMode="numeric"
               {...register("phoneNumber")}
               className={cn(errors.phoneNumber && "border-destructive")}
             />
+            <p className="text-xs text-muted-foreground">
+              Nigerian number only — used for order notifications
+            </p>
             {errors.phoneNumber && (
               <p className="text-sm text-destructive">
                 {errors.phoneNumber.message}

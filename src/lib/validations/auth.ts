@@ -38,18 +38,38 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+// Matric format: YYYY/XX/NNNNN (e.g. 2023/EN/32845)
+// Flexible enough for multi-university expansion
+const MATRIC_REGEX = /^\d{4}\/[A-Z]{2,4}\/\d{4,6}$/;
+
+// Nigerian phone: 11 digits starting with 0, or +234 format
+const PHONE_REGEX = /^(\+234|0)[789][01]\d{8}$/;
+
 export const onboardingSchema = z.object({
-  fullName: z.string().min(1, "Full name is required").max(100),
+  fullName: z
+    .string()
+    .min(1, "Full name is required")
+    .max(100, "Full name too long")
+    .trim(),
   university: z.string().min(1, "University is required"),
   matricNumber: z
     .string()
     .min(1, "Matric number is required")
-    .max(50, "Matric number too long"),
+    .max(50, "Matric number too long")
+    .transform((val) => val.toUpperCase().trim())
+    .refine(
+      (val) => MATRIC_REGEX.test(val),
+      "Invalid matric number format. Use YYYY/XX/NNNNN (e.g. 2023/EN/32845)"
+    ),
   phoneNumber: z
     .string()
-    .min(10, "Phone number too short")
-    .max(15, "Phone number too long")
-    .optional(),
+    .transform((val) => val.trim())
+    .refine(
+      (val) => val === "" || PHONE_REGEX.test(val),
+      "Invalid Nigerian phone number. Use format 08012345678 or +2348012345678"
+    )
+    .optional()
+    .or(z.literal("")),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

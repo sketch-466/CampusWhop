@@ -432,7 +432,8 @@ export async function completeOnboarding(formData: {
     .eq("id", user.id);
 
   if (profileError) {
-    return { error: "Failed to complete onboarding" };
+  return { error: profileError.message };
+}
   }
 
   revalidatePath("/", "layout");
