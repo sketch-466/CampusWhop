@@ -68,13 +68,27 @@ export async function uploadListingImage(formData: FormData) {
   const file = formData.get("image") as File;
   if (!file) return { error: "No file provided" };
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-  if (!allowedTypes.includes(file.type)) {
-    return { error: "Only JPG, PNG, and WEBP images are allowed" };
+  const allowedTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+    "image/gif",
+  ];
+
+  const allowedExtensions = ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"];
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+
+  if (file.type && !allowedTypes.includes(file.type) && !allowedExtensions.includes(ext)) {
+    return { error: `File type not supported (${file.type || ext}). Use JPG, PNG, or WEBP.` };
   }
 
-  const maxSize = 10 * 1024 * 1024;
-  if (file.size > maxSize) return { error: "File must be less than 10MB" };
+  const maxSize = 20 * 1024 * 1024;
+  if (file.size > maxSize) {
+    return { error: `Image too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 20MB.` };
+  }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -82,13 +96,16 @@ export async function uploadListingImage(formData: FormData) {
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const fileName = `${user.id}-${generateFileName(file.name)}`;
+  const fileExt = ext || "jpg";
+  const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`;
+  const mimeType = file.type || `image/${fileExt}`;
 
   let url: string;
   try {
-    url = await uploadToB2(buffer, fileName, "listings", file.type);
-  } catch {
-    return { error: "Failed to upload image" };
+    url = await uploadToB2(buffer, fileName, "listings", mimeType);
+  } catch (err) {
+    console.error("B2 upload error:", err);
+    return { error: "Upload failed. Please check your connection and try again." };
   }
 
   return { success: true, url };

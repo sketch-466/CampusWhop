@@ -40,6 +40,7 @@ export default function NewListingPage() {
   const [digitalFileUrl, setDigitalFileUrl] = useState<string>("");
   const [digitalFileName, setDigitalFileName] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>();
@@ -72,9 +73,7 @@ export default function NewListingPage() {
   useEffect(() => {
     async function checkSubaccount() {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
@@ -89,33 +88,54 @@ export default function NewListingPage() {
     checkSubaccount();
   }, [router]);
 
-  const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     if (images.length + files.length > 4) {
       setError("Maximum 4 images allowed");
       return;
     }
+
     setUploading(true);
     setError(undefined);
+    setUploadProgress(0);
+
+    const totalFiles = files.length;
+    let completed = 0;
+
     for (const file of Array.from(files)) {
+      if (file.size > 20 * 1024 * 1024) {
+        setError(`${file.name} is too large. Maximum size is 20MB.`);
+        setUploading(false);
+        setUploadProgress(0);
+        return;
+      }
+
+      setUploadProgress(Math.round((completed / totalFiles) * 90));
+
       const formData = new FormData();
       formData.append("image", file);
       const result = await uploadListingImage(formData);
+
       if (result.error) {
         setError(result.error);
+        setUploading(false);
+        setUploadProgress(0);
+        return;
       } else if (result.url) {
         setImages((prev) => [...prev, result.url]);
+        completed++;
+        setUploadProgress(Math.round((completed / totalFiles) * 100));
       }
     }
-    setUploading(false);
+
+    setTimeout(() => {
+      setUploading(false);
+      setUploadProgress(0);
+    }, 600);
   };
 
-  const handleDigitalFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleDigitalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingFile(true);
@@ -208,8 +228,7 @@ export default function NewListingPage() {
             Listing Submitted!
           </h2>
           <p className="mt-2 text-sm text-emerald-300">
-            Your listing is pending review. We'll notify you once it's
-            approved.
+            Your listing is pending review. We'll notify you once it's approved.
           </p>
           <Button
             onClick={() => router.push("/marketplace/my-listings")}
@@ -234,7 +253,7 @@ export default function NewListingPage() {
 
       <h1 className="text-2xl font-bold text-white">Sell Something</h1>
 
-      {/* Progress */}
+      {/* Step progress */}
       <div className="mt-4 space-y-2">
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <span className="text-emerald-400 font-medium">
@@ -255,6 +274,7 @@ export default function NewListingPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
+
         {/* Step 1: Basic Info */}
         {step === 0 && (
           <>
@@ -281,9 +301,7 @@ export default function NewListingPage() {
                 className={errors.description ? "border-red-500" : ""}
               />
               {errors.description && (
-                <p className="text-xs text-red-400">
-                  {errors.description.message}
-                </p>
+                <p className="text-xs text-red-400">{errors.description.message}</p>
               )}
             </div>
 
@@ -314,69 +332,28 @@ export default function NewListingPage() {
               </div>
             </div>
 
-            {/* Payment type */}
             <div className="space-y-3">
               <Label>Payment Method</Label>
               {!isDigital && (
                 <div className="rounded-xl border border-emerald-500 bg-emerald-500/10 p-4">
-                  <input
-                    type="hidden"
-                    {...register("payment_type")}
-                    value="escrow"
-                  />
-                  <p className="text-sm font-semibold text-white">
-                    🔒 Escrow (Required for Physical)
-                  </p>
+                  <input type="hidden" {...register("payment_type")} value="escrow" />
+                  <p className="text-sm font-semibold text-white">🔒 Escrow (Required for Physical)</p>
                   <p className="text-xs text-zinc-400 mt-1">
-                    Buyer pays into escrow. You accept the order, source the
-                    item, and deliver it. Funds are released to you once the
-                    buyer confirms receipt. Protects both parties.
+                    Buyer pays into escrow. You accept the order, source the item, and deliver it. Funds are released to you once the buyer confirms receipt.
                   </p>
                 </div>
               )}
               {isDigital && (
                 <div className="grid grid-cols-2 gap-3">
-                  <label
-                    className={`cursor-pointer rounded-xl border p-3 transition-colors ${
-                      watched.payment_type === "escrow"
-                        ? "border-emerald-500 bg-emerald-500/10"
-                        : "border-zinc-700 bg-zinc-900/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      value="escrow"
-                      {...register("payment_type")}
-                      className="sr-only"
-                    />
-                    <p className="text-sm font-semibold text-white">
-                      🔒 Escrow
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Payment held and released automatically after file is
-                      delivered to buyer.
-                    </p>
+                  <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${watched.payment_type === "escrow" ? "border-emerald-500 bg-emerald-500/10" : "border-zinc-700 bg-zinc-900/50"}`}>
+                    <input type="radio" value="escrow" {...register("payment_type")} className="sr-only" />
+                    <p className="text-sm font-semibold text-white">🔒 Escrow</p>
+                    <p className="text-xs text-zinc-400 mt-1">Payment held and released automatically after file is delivered.</p>
                   </label>
-                  <label
-                    className={`cursor-pointer rounded-xl border p-3 transition-colors ${
-                      watched.payment_type === "direct"
-                        ? "border-amber-500 bg-amber-500/10"
-                        : "border-zinc-700 bg-zinc-900/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      value="direct"
-                      {...register("payment_type")}
-                      className="sr-only"
-                    />
-                    <p className="text-sm font-semibold text-white">
-                      ⚡ Direct Pay
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Payment sent directly to you on purchase. Best for
-                      digital downloads and instant delivery.
-                    </p>
+                  <label className={`cursor-pointer rounded-xl border p-3 transition-colors ${watched.payment_type === "direct" ? "border-amber-500 bg-amber-500/10" : "border-zinc-700 bg-zinc-900/50"}`}>
+                    <input type="radio" value="direct" {...register("payment_type")} className="sr-only" />
+                    <p className="text-sm font-semibold text-white">⚡ Direct Pay</p>
+                    <p className="text-xs text-zinc-400 mt-1">Payment sent directly to you on purchase. Best for instant digital downloads.</p>
                   </label>
                 </div>
               )}
@@ -417,32 +394,22 @@ export default function NewListingPage() {
               />
             </div>
 
-            {/* Digital file upload — shown in pricing step */}
             {isDigital && (
               <div className="space-y-3">
                 <Label>Digital File</Label>
                 <p className="text-xs text-zinc-500">
-                  Upload the file buyers will receive. Max 100MB. Supports
-                  PDF, ZIP, MP4, PNG, JPG, DOCX, and more.
+                  Upload the file buyers will receive. Max 100MB. Supports PDF, ZIP, MP4, PNG, JPG, DOCX, and more.
                 </p>
-
                 {digitalFileUrl ? (
                   <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
                     <FileText className="h-8 w-8 text-emerald-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-emerald-400 truncate">
-                        {digitalFileName}
-                      </p>
-                      <p className="text-xs text-zinc-500 mt-0.5">
-                        File uploaded successfully
-                      </p>
+                      <p className="text-sm font-medium text-emerald-400 truncate">{digitalFileName}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">File uploaded successfully</p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        setDigitalFileUrl("");
-                        setDigitalFileName("");
-                      }}
+                      onClick={() => { setDigitalFileUrl(""); setDigitalFileName(""); }}
                       className="flex-shrink-0 rounded-full bg-zinc-700 p-1 text-zinc-400 hover:bg-zinc-600"
                     >
                       <X className="h-3 w-3" />
@@ -454,9 +421,7 @@ export default function NewListingPage() {
                     <span className="mt-2 text-sm text-zinc-400">
                       {uploadingFile ? "Uploading..." : "Click to upload file"}
                     </span>
-                    <span className="mt-1 text-xs text-zinc-600">
-                      PDF, ZIP, MP4, PNG, DOCX, and more
-                    </span>
+                    <span className="mt-1 text-xs text-zinc-600">PDF, ZIP, MP4, PNG, DOCX, and more</span>
                     <input
                       type="file"
                       className="hidden"
@@ -474,28 +439,18 @@ export default function NewListingPage() {
         {step === 2 && (
           <div className="space-y-4">
             <Label>
-              {isDigital
-                ? "Product Preview Images (cover image, screenshots)"
-                : "Images"}{" "}
+              {isDigital ? "Product Preview Images (cover image, screenshots)" : "Images"}{" "}
               ({images.length}/4)
             </Label>
             {isDigital && (
               <p className="text-xs text-zinc-500">
-                Upload a cover image or screenshots of your product. This is
-                what buyers see before purchasing.
+                Upload a cover image or screenshots of your product. This is what buyers see before purchasing.
               </p>
             )}
             <div className="grid grid-cols-2 gap-3">
               {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden"
-                >
-                  <img
-                    src={img}
-                    alt={`Upload ${i + 1}`}
-                    className="h-full w-full object-cover"
-                  />
+                <div key={i} className="relative aspect-square rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                  <img src={img} alt={`Upload ${i + 1}`} className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
@@ -505,15 +460,42 @@ export default function NewListingPage() {
                   </button>
                 </div>
               ))}
+
               {images.length < 4 && (
-                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900/50 transition-colors hover:border-zinc-500">
-                  <Upload className="h-8 w-8 text-zinc-500" />
-                  <span className="mt-2 text-xs text-zinc-500">
-                    {uploading ? "Uploading..." : "Click to upload"}
-                  </span>
+                <label className={`flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
+                  uploading
+                    ? "border-emerald-500/50 bg-emerald-500/5 cursor-not-allowed"
+                    : "border-zinc-700 bg-zinc-900/50 hover:border-zinc-500"
+                }`}>
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-3 px-4 w-full">
+                      <svg className="animate-spin h-7 w-7 text-emerald-500" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <div className="w-full space-y-1">
+                        <div className="flex justify-between text-xs text-zinc-400">
+                          <span>Uploading...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-zinc-800">
+                          <div
+                            className="h-1.5 rounded-full bg-emerald-500 transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 text-zinc-500" />
+                      <span className="mt-2 text-xs text-zinc-500">Click to upload</span>
+                      <span className="mt-1 text-xs text-zinc-600">JPG, PNG, WEBP · Max 20MB</span>
+                    </>
+                  )}
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic"
                     multiple
                     className="hidden"
                     onChange={handleImageUpload}
@@ -522,10 +504,8 @@ export default function NewListingPage() {
                 </label>
               )}
             </div>
-            {images.length === 0 && (
-              <p className="text-xs text-zinc-500">
-                Upload at least one image
-              </p>
+            {images.length === 0 && !uploading && (
+              <p className="text-xs text-zinc-500">Upload at least one image</p>
             )}
           </div>
         )}
@@ -539,26 +519,21 @@ export default function NewListingPage() {
                 <span className="text-zinc-300">Title:</span> {watched.title}
               </p>
               <p className="text-zinc-400">
-                <span className="text-zinc-300">Price:</span> ₦
-                {watched.price?.toLocaleString()}
+                <span className="text-zinc-300">Price:</span> ₦{watched.price?.toLocaleString()}
               </p>
               <p className="text-zinc-400">
                 <span className="text-zinc-300">Category:</span>{" "}
                 {categories.find((c) => c.value === watched.category)?.label}
               </p>
               <p className="text-zinc-400">
-                <span className="text-zinc-300">Type:</span>{" "}
-                {watched.product_type}
+                <span className="text-zinc-300">Type:</span> {watched.product_type}
               </p>
               <p className="text-zinc-400">
                 <span className="text-zinc-300">Payment:</span>{" "}
-                {watched.payment_type === "escrow"
-                  ? "🔒 Escrow"
-                  : "⚡ Direct Pay"}
+                {watched.payment_type === "escrow" ? "🔒 Escrow" : "⚡ Direct Pay"}
               </p>
               <p className="text-zinc-400">
-                <span className="text-zinc-300">Images:</span> {images.length}{" "}
-                uploaded
+                <span className="text-zinc-300">Images:</span> {images.length} uploaded
               </p>
               {isDigital && (
                 <p className="text-zinc-400">
@@ -607,4 +582,3 @@ export default function NewListingPage() {
     </div>
   );
 }
-      
