@@ -1,5 +1,8 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeaturedListing {
   id: string;
@@ -40,17 +43,96 @@ export function FeaturedSection({ listings, products }: FeaturedSectionProps) {
     ...products.map((p) => ({ ...p, _type: "store_product" as const })),
   ];
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const CARD_WIDTH = 172; // 160px card + 12px gap
+  const AUTO_SCROLL_INTERVAL = 3000;
+
+  const updateScrollButtons = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  const scrollBy = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction === "right" ? CARD_WIDTH * 2 : -CARD_WIDTH * 2, behavior: "smooth" });
+  };
+
+  // Auto-scroll
+  useEffect(() => {
+    if (all.length <= 2) return;
+
+    const interval = setInterval(() => {
+      if (isPaused) return;
+      const el = scrollRef.current;
+      if (!el) return;
+
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: CARD_WIDTH, behavior: "smooth" });
+      }
+    }, AUTO_SCROLL_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isPaused, all.length]);
+
+  // Update buttons on scroll
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateScrollButtons);
+    updateScrollButtons();
+    return () => el.removeEventListener("scroll", updateScrollButtons);
+  }, []);
+
   if (all.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 pb-10">
-      <div className="flex items-center gap-2 mb-4">
-        <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-        <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wide">
-          Featured
-        </h2>
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+          <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wide">
+            Featured
+          </h2>
+        </div>
+
+        {/* Desktop scroll buttons */}
+        <div className="hidden sm:flex items-center gap-1">
+          <button
+            onClick={() => scrollBy("left")}
+            disabled={!canScrollLeft}
+            className="rounded-lg border border-zinc-800 p-1.5 text-zinc-400 hover:text-white hover:border-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => scrollBy("right")}
+            disabled={!canScrollRight}
+            className="rounded-lg border border-zinc-800 p-1.5 text-zinc-400 hover:text-white hover:border-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+
+      <div
+        ref={scrollRef}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setTimeout(() => setIsPaused(false), 2000)}
+        className="flex gap-3 overflow-x-auto pb-2 scrollbar-none scroll-smooth"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
         {all.map((item) => {
           const href =
             item._type === "listing"
@@ -102,6 +184,18 @@ export function FeaturedSection({ listings, products }: FeaturedSectionProps) {
           );
         })}
       </div>
+
+      {/* Mobile dot indicators */}
+      {all.length > 2 && (
+        <div className="flex justify-center gap-1 mt-3 sm:hidden">
+          {Array.from({ length: Math.min(all.length, 5) }).map((_, i) => (
+            <div
+              key={i}
+              className="h-1 w-1 rounded-full bg-zinc-700"
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
