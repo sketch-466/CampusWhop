@@ -9,15 +9,15 @@ export default async function AdminFeaturedPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .
+  const adminClient = createAdminClient();
+  const { data: profile } = await adminClient
+    .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
   if (!profile?.is_admin) redirect("/dashboard");
 
-  const adminClient = createAdminClient();
   const now = new Date().toISOString();
 
   const [{ data: activeListings }, { data: activeProducts }] = await Promise.all([
