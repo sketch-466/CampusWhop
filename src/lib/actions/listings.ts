@@ -68,6 +68,16 @@ export async function uploadListingImage(formData: FormData) {
   const file = formData.get("image") as File;
   if (!file) return { error: "No file provided" };
 
+  // TEMPORARY DEBUG — remove after diagnosis
+  console.log("Upload attempt:", {
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    ext: file.name.split(".").pop()?.toLowerCase(),
+  });
+
+  // ... rest of function
+
   const allowedTypes = [
     "image/jpeg",
     "image/jpg",
@@ -79,11 +89,17 @@ export async function uploadListingImage(formData: FormData) {
   ];
 
   const allowedExtensions = ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"];
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  // Only reject if we're absolutely sure it's not an image
+const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+const isLikelyImage = 
+  file.type.startsWith("image/") || 
+  ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "tiff"].includes(ext) ||
+  file.type === "" || // Accept unknown types — B2 will handle validation
+  file.size > 0;
 
-  if (file.type && !allowedTypes.includes(file.type) && !allowedExtensions.includes(ext)) {
-    return { error: `File type not supported (${file.type || ext}). Use JPG, PNG, or WEBP.` };
-  }
+if (!isLikelyImage) {
+  return { error: "File doesn't appear to be an image. Please select a photo." };
+}
 
   const maxSize = 20 * 1024 * 1024;
   if (file.size > maxSize) {
