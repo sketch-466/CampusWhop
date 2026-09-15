@@ -8,11 +8,21 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createOpportunity } from '@/lib/actions/opportunities'
 
-const CATEGORIES = [
-  { value: 'scholarship', label: '🎓 Scholarship' },
-  { value: 'internship', label: '💼 Internship' },
-  { value: 'grant', label: '💰 Grant' },
-  { value: 'competition', label: '🏆 Competition' },
+import type { OpportunityCategory } from '@/lib/validations/opportunities'
+
+const CATEGORIES: { value: OpportunityCategory; label: string; description: string }[] = [
+  { value: 'scholarship', label: '🎓 Scholarship', description: 'Funded education awards' },
+  { value: 'internship', label: '💼 Internship', description: 'Work experience programs' },
+  { value: 'grant', label: '💰 Grant', description: 'Funding for projects or research' },
+  { value: 'competition', label: '🏆 Competition', description: 'Contests with prizes' },
+  { value: 'free_training', label: '📚 Free Training', description: 'Free courses and bootcamps' },
+  { value: 'career_development', label: '📈 Career Dev', description: 'Skills and career programs' },
+  { value: 'fellowship', label: '🌍 Fellowship', description: 'Research and leadership programs' },
+  { value: 'volunteer', label: '🤝 Volunteer', description: 'Community service opportunities' },
+  { value: 'hackathon', label: '💻 Hackathon', description: 'Coding and innovation events' },
+  { value: 'mentorship', label: '🧭 Mentorship', description: 'Mentoring programs' },
+  { value: 'job', label: '💼 Job', description: 'Full-time and part-time roles' },
+  { value: 'other', label: '📦 Other', description: 'Anything else worth sharing' },
 ]
 
 type FormErrors = Partial<Record<string, string>>
@@ -23,7 +33,7 @@ export default function NewOpportunityPage() {
   const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
 
-  const [category, setCategory] = useState('scholarship')
+  const [category, setCategory] = useState<OpportunityCategory>('scholarship')
   const [title, setTitle] = useState('')
   const [organization, setOrganization] = useState('')
   const [description, setDescription] = useState('')
@@ -54,7 +64,7 @@ export default function NewOpportunityPage() {
 
     try {
       await createOpportunity({
-        category: category as 'scholarship' | 'internship' | 'grant' | 'competition',
+        category,
         title: title.trim(),
         organization: organization.trim(),
         description: description.trim(),
@@ -74,6 +84,7 @@ export default function NewOpportunityPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
+  const selectedCategory = CATEGORIES.find(c => c.value === category)
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
@@ -87,11 +98,12 @@ export default function NewOpportunityPage() {
         </button>
         <h1 className="text-lg font-bold text-zinc-100">Submit Opportunity</h1>
         <p className="text-xs text-zinc-500 mt-0.5">
-          Share a scholarship, internship, grant or competition with the community
+          Share an opportunity with the CampusWhop community
         </p>
       </div>
 
       <div className="px-4 py-5 space-y-5">
+
         {/* Category */}
         <div className="space-y-1.5">
           <Label className="text-xs text-zinc-400">Category</Label>
@@ -101,17 +113,28 @@ export default function NewOpportunityPage() {
                 key={cat.value}
                 type="button"
                 onClick={() => setCategory(cat.value)}
-                className={`rounded-lg border py-2.5 text-xs font-medium transition-colors ${
+                className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
                   category === cat.value
                     ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
                     : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500'
                 }`}
               >
-                {cat.label}
+                <p className="text-xs font-medium">{cat.label}</p>
+                <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight">{cat.description}</p>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Selected category hint */}
+        {selectedCategory && (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+            <p className="text-xs text-zinc-400">
+              <span className="text-emerald-400 font-medium">{selectedCategory.label}</span>
+              {' '}— {selectedCategory.description}
+            </p>
+          </div>
+        )}
 
         {/* Title */}
         <div className="space-y-1.5">
@@ -122,7 +145,7 @@ export default function NewOpportunityPage() {
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. MTN Foundation Scholarship 2025"
+            placeholder="e.g. MTN Foundation Scholarship 2026"
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
           {errors.title && <p className="text-xs text-red-400">{errors.title}</p>}
@@ -187,7 +210,7 @@ export default function NewOpportunityPage() {
             id="amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="e.g. ₦500,000 or Fully Funded or $2,000"
+            placeholder="e.g. ₦500,000 or Fully Funded or $2,000 or Free"
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
         </div>
@@ -260,8 +283,7 @@ export default function NewOpportunityPage() {
 
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
           <p className="text-xs text-zinc-500">
-            ⏳ Your submission will be reviewed by our team before going live.
-            Make sure the application link works before submitting.
+            ⏳ Your submission will be reviewed before going live. Make sure the application link works before submitting.
           </p>
         </div>
 

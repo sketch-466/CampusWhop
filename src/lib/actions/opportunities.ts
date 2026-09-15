@@ -159,7 +159,8 @@ export async function getPendingOpportunities(): Promise<OpportunityWithPoster[]
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const adminClient = createAdminClient()
+  const { data: profile } = await adminClient
     .from('profiles')
     .select('is_admin')
     .eq('id', user.id)
@@ -167,7 +168,6 @@ export async function getPendingOpportunities(): Promise<OpportunityWithPoster[]
 
   if (!profile?.is_admin) redirect('/dashboard')
 
-  const adminClient = createAdminClient()
   const { data, error } = await adminClient
     .from('opportunities')
     .select('*, profiles!opportunities_poster_id_fkey(id, full_name, avatar_url)')
@@ -177,6 +177,57 @@ export async function getPendingOpportunities(): Promise<OpportunityWithPoster[]
 
   if (error) throw new Error(error.message)
   return (data ?? []) as OpportunityWithPoster[]
+}
+
+export async function approveOpportunity(id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const adminClient = createAdminClient()
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) throw new Error('Unauthorized')
+
+  const { error } = await adminClient
+    .from('opportunities')
+    .update({ status: 'active', updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/opportunities')
+  revalidatePath('/opportunities')
+}
+
+export async function rejectOpportunity(id: string, reason: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const adminClient = createAdminClient()
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_admin) throw new Error('Unauthorized')
+
+  const { error } = await adminClient
+    .from('opportunities')
+    .update({
+      status: 'rejected',
+      rejection_reason: reason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/opportunities')
 }
 
 export async function approveOpportunity(id: string) {

@@ -8,6 +8,14 @@ const CATEGORIES = [
   { value: 'internship', label: '💼 Internships' },
   { value: 'grant', label: '💰 Grants' },
   { value: 'competition', label: '🏆 Competitions' },
+  { value: 'free_training', label: '📚 Free Training' },
+  { value: 'career_development', label: '📈 Career Dev' },
+  { value: 'fellowship', label: '🌍 Fellowships' },
+  { value: 'volunteer', label: '🤝 Volunteer' },
+  { value: 'hackathon', label: '💻 Hackathons' },
+  { value: 'mentorship', label: '🧭 Mentorship' },
+  { value: 'job', label: '💼 Jobs' },
+  { value: 'other', label: '📦 Other' },
 ]
 
 type PageProps = {
@@ -22,15 +30,17 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
     category ? { category } : undefined
   )
 
+  const activeLabel = CATEGORIES.find(c => c.value === category)?.label ?? '🌟 All'
+
   return (
-    <div className="min-h-screen bg-zinc-950 pb-20">
+    <div className="min-h-screen bg-zinc-950 pb-24">
       {/* Header */}
       <div className="border-b border-zinc-800 bg-zinc-900 px-4 py-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-zinc-100">Opportunities</h1>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Scholarships, internships, grants and competitions
+              Scholarships, training, internships, fellowships and more
             </p>
           </div>
           <Link
@@ -42,14 +52,14 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
         </div>
 
         {/* Category tabs */}
-        <div className="mt-4 flex gap-1 overflow-x-auto pb-1">
+        <div className="mt-4 flex gap-1 overflow-x-auto pb-1 scrollbar-none">
           {CATEGORIES.map((cat) => (
             <Link
               key={cat.value}
               href={cat.value ? `/opportunities?category=${cat.value}` : '/opportunities'}
               className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                 category === cat.value
-                  ? 'bg-zinc-700 text-zinc-100'
+                  ? 'bg-emerald-600 text-white'
                   : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
               }`}
             >
@@ -65,10 +75,10 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="text-5xl mb-3">🎯</span>
             <h3 className="text-sm font-semibold text-zinc-300 mb-1">
-              No opportunities yet
+              No {category ? activeLabel.replace(/^[^\s]+\s/, '') : 'opportunities'} yet
             </h3>
             <p className="text-xs text-zinc-500 mb-4">
-              Know of a scholarship or internship? Share it with the community.
+              Know of one? Share it with the community.
             </p>
             <Link
               href="/opportunities/new"
@@ -81,6 +91,7 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
           <div className="space-y-3">
             <p className="text-xs text-zinc-600">
               {opportunities.length} opportunit{opportunities.length === 1 ? 'y' : 'ies'} found
+              {category ? ` in ${activeLabel}` : ''}
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {opportunities.map((opportunity) => (
