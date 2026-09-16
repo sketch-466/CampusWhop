@@ -110,6 +110,21 @@ export default function NewListingPage() {
         setUploadProgress(0);
         return;
       }
+      // Guard against files that can't be read (cloud/content URI issues)
+try {
+  const testRead = await file.slice(0, 1).arrayBuffer();
+  if (testRead.byteLength === 0 && file.size > 0) {
+    setError("Couldn't read this image. Please try saving it to your device first, then upload.");
+    setUploading(false);
+    setUploadProgress(0);
+    return;
+  }
+} catch {
+  setError("Couldn't read this image. Please try saving it to your device first, then upload.");
+  setUploading(false);
+  setUploadProgress(0);
+  return;
+}
 
       setUploadProgress(Math.round((completed / totalFiles) * 90));
 
@@ -494,13 +509,14 @@ export default function NewListingPage() {
                     </>
                   )}
                   <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                  />
+  type="file"
+  accept="image/*"
+  multiple
+  capture={undefined}
+  className="hidden"
+  onChange={handleImageUpload}
+  disabled={uploading}
+/>
                 </label>
               )}
             </div>
