@@ -12,6 +12,8 @@ import { ReputationBadge } from "@/components/shared/reputation-badge";
 import ViewTracker from "@/components/shared/view-tracker";
 import MessageButton from "@/components/shared/message-button";
 
+import { ShareListingButton } from "@/components/shared/share-listing-button";
+
 function normalizeRelation<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
   if (Array.isArray(rel)) return rel[0] ?? null;
@@ -233,33 +235,55 @@ export default async function ListingDetailPage({
           )}
 
           {isOwner ? (
-            <div className="rounded-lg border border-yellow-800 bg-yellow-900/20 p-4">
-              <p className="text-sm text-yellow-400">
-                This is your listing. Buyers will see a Buy Now button here.
-              </p>
-            </div>
-          ) : !user ? (
-            <Link href="/login">
-              <Button className="w-full bg-emerald-500 hover:bg-emerald-600">
-                Sign in to Buy
-              </Button>
-            </Link>
-          ) : (
-            <div className="space-y-3">
-              <BuyButton
-                listingId={rawListing.id}
-                price={rawListing.price}
-                paymentType={
-                  (rawListing.payment_type as "escrow" | "direct") ?? "escrow"
-                }
-              />
-              <MessageButton
-                otherUserId={rawListing.seller_id}
-                listingId={rawListing.id}
-                label="Message Seller"
-              />
-            </div>
-          )}
+  <div className="space-y-3">
+    <div className="rounded-lg border border-yellow-800 bg-yellow-900/20 p-4">
+      <p className="text-sm text-yellow-400">
+        This is your listing. Buyers will see a Buy Now button here.
+      </p>
+    </div>
+    <ShareListingButton
+      title={rawListing.title}
+      price={rawListing.price}
+      description={rawListing.description}
+      id={rawListing.id}
+    />
+  </div>
+) : !user ? (
+  <div className="space-y-3">
+    <Link href="/login">
+      <Button className="w-full bg-emerald-500 hover:bg-emerald-600">
+        Sign in to Buy
+      </Button>
+    </Link>
+    <ShareListingButton
+      title={rawListing.title}
+      price={rawListing.price}
+      description={rawListing.description}
+      id={rawListing.id}
+    />
+  </div>
+) : (
+  <div className="space-y-3">
+    <BuyButton
+      listingId={rawListing.id}
+      price={rawListing.price}
+      paymentType={
+        (rawListing.payment_type as "escrow" | "direct") ?? "escrow"
+      }
+    />
+    <MessageButton
+      otherUserId={rawListing.seller_id}
+      listingId={rawListing.id}
+      label="Message Seller"
+    />
+    <ShareListingButton
+      title={rawListing.title}
+      price={rawListing.price}
+      description={rawListing.description}
+      id={rawListing.id}
+    />
+  </div>
+)}
         </div>
       </div>
     </div>

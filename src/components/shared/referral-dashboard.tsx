@@ -37,11 +37,17 @@ export default function ReferralDashboard({
   };
 
   const handleWhatsApp = () => {
-    const text = encodeURIComponent(
-      `Join me on CampusWhop — the marketplace for FUNAI students! Buy, sell, and find opportunities. Sign up here: ${referralUrl}`
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-  };
+  const text = encodeURIComponent(
+    `🛍️ *CampusWhop — The FUNAI Campus Marketplace*\n\n` +
+    `Buy and sell safely with escrow payments. No more getting scammed.\n\n` +
+    `✅ Verified student listings\n` +
+    `🔒 Escrow payment protection\n` +
+    `📦 Physical & digital products\n` +
+    `💼 Gigs, internships & opportunities\n\n` +
+    `Sign up free 👇\n${referralUrl}`
+  );
+  window.open(`https://wa.me/?text=${text}`, "_blank");
+};
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">

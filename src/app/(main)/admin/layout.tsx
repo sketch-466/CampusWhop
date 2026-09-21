@@ -13,6 +13,7 @@ const adminNav = [
   { label: "Subscriptions", href: "/admin/subscriptions" },
   { label: "Founders", href: "/admin/founders" },
   { label: "Analytics", href: "/admin/analytics" },
+  { href: "/admin/referrals", label: "Referrals" }
 ];
 
 export default async function AdminLayout({
