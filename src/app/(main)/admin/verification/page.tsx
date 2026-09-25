@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { formatDistanceToNow } from "date-fns"
 import {
   CheckCircle2,
   XCircle,
@@ -185,9 +184,12 @@ export default function AdminVerificationPage() {
 
                     <div className="text-right shrink-0">
                       <p className="text-xs text-zinc-600">
-                        {formatDistanceToNow(new Date(record.created_at), {
-                          addSuffix: true,
-                        })}
+                        // NEW
+{new Date(record.created_at).toLocaleDateString('en-NG', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})}
                       </p>
                     </div>
 
