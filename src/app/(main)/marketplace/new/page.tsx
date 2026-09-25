@@ -16,7 +16,8 @@ import {
   uploadDigitalFile,
 } from "@/lib/actions/listings";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Upload, X, FileText } from "lucide-react";
+import { getVerificationStatus } from "@/lib/actions/verification";
+import { ArrowLeft, Upload, X, FileText, BadgeCheck, Clock, AlertCircle } from "lucide-react";
 
 const categories = [
   { value: "phones", label: "Phones" },
@@ -33,6 +34,8 @@ const categories = [
 
 const steps = ["Basic Info", "Pricing", "Images", "Review"];
 
+type GateStatus = "loading" | "no_subaccount" | "unverified" | "pending" | "rejected" | "ready";
+
 export default function NewListingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -45,7 +48,8 @@ export default function NewListingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
-  const [hasSubaccount, setHasSubaccount] = useState<boolean | null>(null);
+  const [gateStatus, setGateStatus] = useState<GateStatus>("loading");
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   const {
     register,
@@ -71,21 +75,45 @@ export default function NewListingPage() {
   }, [isDigital, setValue]);
 
   useEffect(() => {
-    async function checkSubaccount() {
+    async function checkGates() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
       }
+
+      // Check verification first
+      const verification = await getVerificationStatus();
+      if (!verification || verification.status === "unverified") {
+        setGateStatus("unverified");
+        return;
+      }
+      if (verification.status === "pending") {
+        setGateStatus("pending");
+        return;
+      }
+      if (verification.status === "rejected") {
+        setRejectionReason(verification.rejectionReason);
+        setGateStatus("rejected");
+        return;
+      }
+
+      // Verified — now check subaccount
       const { data } = await supabase
         .from("paystack_subaccounts")
         .select("id")
         .eq("user_id", user.id)
         .single();
-      setHasSubaccount(!!data);
+
+      if (!data) {
+        setGateStatus("no_subaccount");
+        return;
+      }
+
+      setGateStatus("ready");
     }
-    checkSubaccount();
+    checkGates();
   }, [router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,21 +138,20 @@ export default function NewListingPage() {
         setUploadProgress(0);
         return;
       }
-      // Guard against files that can't be read (cloud/content URI issues)
-try {
-  const testRead = await file.slice(0, 1).arrayBuffer();
-  if (testRead.byteLength === 0 && file.size > 0) {
-    setError("Couldn't read this image. Please try saving it to your device first, then upload.");
-    setUploading(false);
-    setUploadProgress(0);
-    return;
-  }
-} catch {
-  setError("Couldn't read this image. Please try saving it to your device first, then upload.");
-  setUploading(false);
-  setUploadProgress(0);
-  return;
-}
+      try {
+        const testRead = await file.slice(0, 1).arrayBuffer();
+        if (testRead.byteLength === 0 && file.size > 0) {
+          setError("Couldn't read this image. Please try saving it to your device first, then upload.");
+          setUploading(false);
+          setUploadProgress(0);
+          return;
+        }
+      } catch {
+        setError("Couldn't read this image. Please try saving it to your device first, then upload.");
+        setUploading(false);
+        setUploadProgress(0);
+        return;
+      }
 
       setUploadProgress(Math.round((completed / totalFiles) * 90));
 
@@ -206,7 +233,9 @@ try {
     setIsSubmitting(false);
   };
 
-  if (hasSubaccount === null) {
+  // ─── Gate screens ─────────────────────────────────────
+
+  if (gateStatus === "loading") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
@@ -214,7 +243,84 @@ try {
     );
   }
 
-  if (hasSubaccount === false) {
+  if (gateStatus === "unverified") {
+    return (
+      <div className="mx-auto max-w-md px-4 py-12 text-center">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8">
+          <div className="h-14 w-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+            <BadgeCheck className="h-7 w-7 text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">
+            Verify your student identity
+          </h2>
+          <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+            To protect buyers on CampusWhop, all sellers must verify they are
+            real FUNAI students before listing. It takes less than 2 minutes.
+          </p>
+          <Link href="/verification">
+            <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-900 font-semibold">
+              Start Verification
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (gateStatus === "pending") {
+    return (
+      <div className="mx-auto max-w-md px-4 py-12 text-center">
+        <div className="rounded-xl border border-amber-800/40 bg-amber-500/5 p-8">
+          <div className="h-14 w-14 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
+            <Clock className="h-7 w-7 text-amber-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">
+            Verification under review
+          </h2>
+          <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+            Your documents are being reviewed. You'll be able to list products
+            once approved — usually within 24–48 hours.
+          </p>
+          <Link href="/verification/pending">
+            <Button variant="outline" className="w-full border-zinc-700 text-zinc-300">
+              View Status
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (gateStatus === "rejected") {
+    return (
+      <div className="mx-auto max-w-md px-4 py-12 text-center">
+        <div className="rounded-xl border border-red-800/40 bg-red-500/5 p-8">
+          <div className="h-14 w-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="h-7 w-7 text-red-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">
+            Verification rejected
+          </h2>
+          {rejectionReason && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 text-left">
+              <p className="text-xs text-red-400 font-medium mb-0.5">Reason:</p>
+              <p className="text-xs text-red-300">{rejectionReason}</p>
+            </div>
+          )}
+          <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+            Please resubmit with clearer documents that show all text clearly.
+          </p>
+          <Link href="/verification">
+            <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-900 font-semibold">
+              Resubmit Verification
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (gateStatus === "no_subaccount") {
     return (
       <div className="mx-auto max-w-md px-4 py-12 text-center">
         <div className="rounded-xl border border-amber-800 bg-amber-900/20 p-8">
@@ -509,14 +615,14 @@ try {
                     </>
                   )}
                   <input
-  type="file"
-  accept="image/*"
-  multiple
-  capture={undefined}
-  className="hidden"
-  onChange={handleImageUpload}
-  disabled={uploading}
-/>
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    capture={undefined}
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                  />
                 </label>
               )}
             </div>
@@ -528,72 +634,83 @@ try {
 
         {/* Step 4: Review */}
         {step === 3 && (
-          <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6">
-            <h3 className="font-medium text-white">Review Your Listing</h3>
-            <div className="space-y-2 text-sm">
-              <p className="text-zinc-400">
-                <span className="text-zinc-300">Title:</span> {watched.title}
-              </p>
-              <p className="text-zinc-400">
-                <span className="text-zinc-300">Price:</span> ₦{watched.price?.toLocaleString()}
-              </p>
-              <p className="text-zinc-400">
-                <span className="text-zinc-300">Category:</span>{" "}
-                {categories.find((c) => c.value === watched.category)?.label}
-              </p>
-              <p className="text-zinc-400">
-                <span className="text-zinc-300">Type:</span> {watched.product_type}
-              </p>
-              <p className="text-zinc-400">
-                <span className="text-zinc-300">Payment:</span>{" "}
-                {watched.payment_type === "escrow" ? "🔒 Escrow" : "⚡ Direct Pay"}
-              </p>
-              <p className="text-zinc-400">
-                <span className="text-zinc-300">Images:</span> {images.length} uploaded
-              </p>
-              {isDigital && (
-                <p className="text-zinc-400">
-                  <span className="text-zinc-300">Digital File:</span>{" "}
-                  {digitalFileName ? (
-                    <span className="text-emerald-400">✓ {digitalFileName}</span>
-                  ) : (
-                    <span className="text-red-400">Not uploaded</span>
-                  )}
-                </p>
-              )}
+          <div className="space-y-4">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white">Review your listing</h3>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Title</span>
+                <span className="text-white font-medium truncate ml-4 max-w-[60%] text-right">{watched.title}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Category</span>
+                <span className="text-white">{watched.category}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Type</span>
+                <span className="text-white capitalize">{watched.product_type}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Price</span>
+                <span className="text-white">₦{watched.price?.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Payment</span>
+                <span className="text-white capitalize">{watched.payment_type}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Images</span>
+                <span className="text-white">{images.length} uploaded</span>
+              </div>
             </div>
-            <p className="text-xs text-zinc-500">
-              Your listing will be reviewed before going live.
-            </p>
+
+            {error && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(2)}
+                className="flex-1 border-zinc-700 text-zinc-300"
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-900 font-semibold"
+              >
+                {isSubmitting ? "Submitting..." : "Submit Listing"}
+              </Button>
+            </div>
           </div>
         )}
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
-
-        <div className="flex gap-3">
-          {step > 0 && (
+        {/* Navigation buttons (steps 1-3) */}
+        {step < 3 && (
+          <div className="flex gap-3 pt-2">
+            {step > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep((s) => s - 1)}
+                className="flex-1 border-zinc-700 text-zinc-300"
+              >
+                Back
+              </Button>
+            )}
             <Button
               type="button"
-              variant="outline"
-              onClick={() => setStep((s) => s - 1)}
+              onClick={nextStep}
+              className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-900 font-semibold"
             >
-              Back
+              Continue
             </Button>
-          )}
-          {step < steps.length - 1 ? (
-            <Button type="button" onClick={nextStep}>
-              Next
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-emerald-500 hover:bg-emerald-600"
-            >
-              {isSubmitting ? "Submitting..." : "Submit Listing"}
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </form>
     </div>
   );

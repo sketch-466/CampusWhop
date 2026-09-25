@@ -8,7 +8,7 @@ import {
   User, Settings, LogOut, ChevronDown, ShoppingBag,
   LayoutDashboard, Shield, CreditCard, Store, GraduationCap,
   BarChart2, Zap, Users, Calendar, MessageCircle, Gift,
-  BookOpen, Coins, Briefcase,
+  BookOpen, Coins, Briefcase, BadgeCheck,
 } from 'lucide-react'
 import MessagesNavLink from '@/components/shared/messages-nav-link'
 import CoinBalance from '@/components/shared/coin-balance'
@@ -212,6 +212,10 @@ export function Navbar({ user }: NavbarProps) {
                       <div className="px-4 py-1.5">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600">Admin</p>
                       </div>
+                      <Link href="/admin/verification" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 hover:bg-zinc-800 hover:text-emerald-300" onClick={close}>
+                        <BadgeCheck className="h-4 w-4" />
+                        Verification
+                      </Link>
                       <Link href="/admin/founders" className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 hover:bg-zinc-800 hover:text-emerald-300" onClick={close}>
                         <Shield className="h-4 w-4" />
                         Founding Creators

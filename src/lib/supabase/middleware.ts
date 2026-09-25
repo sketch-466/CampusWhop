@@ -115,13 +115,15 @@ export async function updateSession(request: NextRequest) {
     '/coins',
     '/api/webhooks/paystack',
     '/api/feature/verify',
+    '/api/verification/upload', // if we use a route handler for uploads
   ]
 
   const postOnboardingDestinations = [
-    '/creator-dashboard',
-    '/dashboard',
-    '/marketplace/new',
-  ]
+  '/creator-dashboard',
+  '/dashboard',
+  '/marketplace/new',
+  '/verification',
+]
 
   const isPublic = publicRoutes.some(r => path === r || path.startsWith(r + '/'))
 
