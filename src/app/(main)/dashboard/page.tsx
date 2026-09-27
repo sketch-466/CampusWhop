@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   ShoppingBag, Store, GraduationCap, Plus, Shield,
-  Users, Calendar, Zap, Wallet,
+  Users, Calendar, Zap, Wallet, Package, CheckCircle,
+  Clock, XCircle,
 } from 'lucide-react'
 import { ReputationBadge } from '@/components/shared/reputation-badge'
 import PulseFeed from '@/components/shared/pulse-feed'
@@ -29,6 +30,8 @@ export default async function DashboardPage() {
     { count: activeSubsCount },
     { data: upcomingBookings },
     { data: wallet },
+    { count: listingsCount },
+    { count: salesCount },
   ] = await Promise.all([
     supabase
       .from('paystack_subaccounts')
@@ -56,11 +59,26 @@ export default async function DashboardPage() {
       .select('balance')
       .eq('user_id', user.id)
       .maybeSingle(),
+    supabase
+      .from('listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', user.id)
+      .neq('status', 'deleted'),
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', user.id),
   ])
 
   const initials = profile.full_name
     ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : (user.email ?? 'U')[0].toUpperCase()
+
+  const isAdmin = ['admin', 'super_admin'].includes(profile?.role ?? '') || profile?.is_admin === true
+  const isSuperAdmin = profile?.role === 'super_admin'
+  const isSeller = (listingsCount ?? 0) > 0 || (salesCount ?? 0) > 0
+
+  const verificationStatus = profile?.verification_status ?? null
 
   const adminLinks = [
     { label: 'Listings', href: '/admin/listings' },
@@ -68,6 +86,8 @@ export default async function DashboardPage() {
     { label: 'Stores', href: '/admin/stores' },
     { label: 'Disputes', href: '/admin/disputes' },
     { label: 'Opportunities', href: '/admin/opportunities' },
+    { label: 'Verification', href: '/admin/verification' },
+    { label: 'Users', href: '/admin/users' },
     { label: 'Analytics', href: '/admin/analytics' },
   ]
 
@@ -81,26 +101,73 @@ export default async function DashboardPage() {
             <p className="text-sm font-medium text-amber-400">Set up your payout account</p>
             <p className="text-xs text-amber-600 mt-0.5">Required to receive payments when you sell</p>
           </div>
-          <Link href="/seller/setup"
-            className="shrink-0 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600">
+          <Link
+            href="/seller/setup"
+            className="shrink-0 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600"
+          >
             Set Up Now
           </Link>
         </div>
       )}
 
-      {/* Creator nudge */}
-      <div className="rounded-lg border border-zinc-700 bg-zinc-900/30 p-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-zinc-300">Are you a creator?</p>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Set your creator type to unlock bookings, subscriptions, and a creator dashboard
-          </p>
+      {/* Verification Status Banner */}
+      {verificationStatus === null || verificationStatus === 'unverified' ? (
+        <div className="rounded-lg border border-zinc-700 bg-zinc-900/30 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Shield className="h-4 w-4 text-zinc-400 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-zinc-300">Verify your student identity</p>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Required to post listings and build trust with buyers
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/verification"
+            className="shrink-0 rounded-md border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
+          >
+            Verify Now
+          </Link>
         </div>
-        <Link href="/profile/edit"
-          className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800">
-          Set Up
-        </Link>
-      </div>
+      ) : verificationStatus === 'pending' ? (
+        <div className="rounded-lg border border-blue-800/40 bg-blue-900/10 p-4 flex items-center gap-3">
+          <Clock className="h-4 w-4 text-blue-400 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-blue-400">Verification under review</p>
+            <p className="text-xs text-blue-400/60 mt-0.5">
+              We'll notify you once your documents are approved
+            </p>
+          </div>
+        </div>
+      ) : verificationStatus === 'rejected' ? (
+        <div className="rounded-lg border border-red-800/40 bg-red-900/10 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <XCircle className="h-4 w-4 text-red-400 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-400">Verification rejected</p>
+              <p className="text-xs text-red-400/60 mt-0.5">
+                Please resubmit with a valid FUNAI document
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/verification"
+            className="shrink-0 rounded-md border border-red-700/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/20"
+          >
+            Resubmit
+          </Link>
+        </div>
+      ) : verificationStatus === 'verified' ? (
+        <div className="rounded-lg border border-emerald-800/30 bg-emerald-900/10 p-4 flex items-center gap-3">
+          <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-emerald-400">Identity verified</p>
+            <p className="text-xs text-emerald-400/60 mt-0.5">
+              Your FUNAI student status is confirmed
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Profile Bar */}
       <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
@@ -129,16 +196,22 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center">
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3">
+        <Link
+          href="/orders?tab=buying"
+          className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center hover:border-zinc-700 transition-colors"
+        >
           <p className="text-lg font-bold text-white">{ordersCount ?? 0}</p>
-          <p className="text-xs text-zinc-500">Orders</p>
-        </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center">
-          <p className="text-lg font-bold text-white">{activeSubsCount ?? 0}</p>
-          <p className="text-xs text-zinc-500">Subscriptions</p>
-        </div>
+          <p className="text-xs text-zinc-500">My Orders</p>
+        </Link>
+        <Link
+          href="/orders?tab=selling"
+          className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center hover:border-zinc-700 transition-colors"
+        >
+          <p className="text-lg font-bold text-white">{salesCount ?? 0}</p>
+          <p className="text-xs text-zinc-500">My Sales</p>
+        </Link>
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center">
           <p className="text-lg font-bold text-white">
             {profile.reputation_score?.toFixed(1) || '0.0'}
@@ -146,6 +219,38 @@ export default async function DashboardPage() {
           <p className="text-xs text-zinc-500">Reputation</p>
         </div>
       </div>
+
+      {/* Seller Section — only show if user has listings or sales */}
+      {isSeller && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-zinc-300">Seller Hub</h3>
+            <Link
+              href="/marketplace/new"
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
+            >
+              <Plus className="h-3 w-3" />
+              New Listing
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href="/marketplace/my-listings"
+              className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 hover:border-zinc-600 transition-colors"
+            >
+              <p className="text-base font-bold text-white">{listingsCount ?? 0}</p>
+              <p className="text-xs text-zinc-500">Active Listings</p>
+            </Link>
+            <Link
+              href="/orders?tab=selling"
+              className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 hover:border-zinc-600 transition-colors"
+            >
+              <p className="text-base font-bold text-white">{salesCount ?? 0}</p>
+              <p className="text-xs text-zinc-500">Total Sales</p>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Wallet Card */}
       <Link
@@ -217,7 +322,13 @@ export default async function DashboardPage() {
             className="group rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-colors hover:border-zinc-700">
             <ShoppingBag className="h-6 w-6 text-emerald-500" />
             <h4 className="mt-2 text-sm font-medium text-white">Marketplace</h4>
-            <p className="text-xs text-zinc-500">Buy products</p>
+            <p className="text-xs text-zinc-500">Buy & sell products</p>
+          </Link>
+          <Link href="/orders"
+            className="group rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-colors hover:border-zinc-700">
+            <Package className="h-6 w-6 text-emerald-500" />
+            <h4 className="mt-2 text-sm font-medium text-white">Orders</h4>
+            <p className="text-xs text-zinc-500">Track purchases & sales</p>
           </Link>
           <Link href="/gigs"
             className="group rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-colors hover:border-zinc-700">
@@ -243,39 +354,37 @@ export default async function DashboardPage() {
             <h4 className="mt-2 text-sm font-medium text-white">Stores</h4>
             <p className="text-xs text-zinc-500">Browse student stores</p>
           </Link>
-          <Link href="/bookings"
-            className="group rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-colors hover:border-zinc-700">
-            <Calendar className="h-6 w-6 text-emerald-500" />
-            <h4 className="mt-2 text-sm font-medium text-white">Bookings</h4>
-            <p className="text-xs text-zinc-500">Your sessions</p>
-          </Link>
         </div>
       </div>
 
-      {/* Start Selling CTA */}
-      <div className="rounded-xl border border-emerald-800/50 bg-emerald-900/20 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-medium text-emerald-400">Start Earning</h3>
-            <p className="text-sm text-emerald-300/70">
-              Post your first listing and make money on campus
-            </p>
+      {/* Start Selling CTA — only show if not yet a seller */}
+      {!isSeller && (
+        <div className="rounded-xl border border-emerald-800/50 bg-emerald-900/20 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-emerald-400">Start Earning</h3>
+              <p className="text-sm text-emerald-300/70">
+                Post your first listing and make money on campus
+              </p>
+            </div>
+            <Link href="/marketplace/new">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
+                <Plus className="h-4 w-4" />
+                Sell Now
+              </span>
+            </Link>
           </div>
-          <Link href="/marketplace/new">
-            <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
-              <Plus className="h-4 w-4" />
-              Sell Now
-            </span>
-          </Link>
         </div>
-      </div>
+      )}
 
       {/* Admin Panel */}
-      {profile.is_admin && (
+      {isAdmin && (
         <div className="rounded-xl border border-amber-800/30 bg-amber-900/10 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Shield className="h-4 w-4 text-amber-400" />
-            <h3 className="text-sm font-semibold text-amber-400">Admin Panel</h3>
+            <h3 className="text-sm font-semibold text-amber-400">
+              {isSuperAdmin ? 'Super Admin Panel' : 'Admin Panel'}
+            </h3>
           </div>
           <div className="flex flex-wrap gap-2">
             {adminLinks.map((link) => (
@@ -287,6 +396,7 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+
     </div>
   )
 }

@@ -13,8 +13,12 @@ const adminNav = [
   { label: "Subscriptions", href: "/admin/subscriptions" },
   { label: "Founders", href: "/admin/founders" },
   { label: "Analytics", href: "/admin/analytics" },
-  { href: "/admin/referrals", label: "Referrals" }
+  { href: "/admin/referrals", label: "Referrals" },
+  { href: "/admin/verification", label: "Verification" },
+  { href: "/admin/users", label: "Users" },
 ];
+
+const ADMIN_ROLES = ["admin", "super_admin"];
 
 export default async function AdminLayout({
   children,
@@ -22,16 +26,25 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("role, is_admin")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) redirect("/dashboard");
+  // During transition: accept either old is_admin OR new role system
+  const hasAdminAccess =
+    ADMIN_ROLES.includes(profile?.role ?? "") || profile?.is_admin === true;
+
+  if (!hasAdminAccess) redirect("/dashboard");
+
+  const isSuperAdmin = profile?.role === "super_admin";
 
   return (
     <div className="min-h-screen">
@@ -39,9 +52,11 @@ export default async function AdminLayout({
         <div className="mx-auto max-w-5xl px-4 py-3">
           <div className="flex items-center gap-2 mb-3">
             <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-              Admin
+              {isSuperAdmin ? "Super Admin" : "Admin"}
             </span>
-            <h1 className="text-sm font-bold text-white">CampusWhop Control Panel</h1>
+            <h1 className="text-sm font-bold text-white">
+              CampusWhop Control Panel
+            </h1>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {adminNav.map((item) => (
@@ -56,9 +71,7 @@ export default async function AdminLayout({
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-5xl px-4 py-6">
-        {children}
-      </div>
+      <div className="mx-auto max-w-5xl px-4 py-6">{children}</div>
     </div>
   );
 }
