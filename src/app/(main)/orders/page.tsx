@@ -4,21 +4,26 @@ import { createClient } from '@/lib/supabase/server'
 import { verifyPayment } from '@/lib/actions/orders'
 import { verifyStoreOrder } from '@/lib/actions/orders-store'
 import OrderActions from '@/components/shared/order-actions'
+import { ChevronRight } from 'lucide-react'
 
-const STATUS_STYLES: Record<string, string> = {
+const STATUS_STYLES: Record < string, string > = {
   pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   paid: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  accepted: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
   shipped: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  delivered: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
   completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   disputed: 'bg-red-500/10 text-red-400 border-red-500/20',
   refunded: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
   cancelled: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
 }
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record < string, string > = {
   pending: 'Pending Payment',
-  paid: 'Paid',
+  paid: 'Payment Received',
+  accepted: 'Accepted',
   shipped: 'Shipped',
+  delivered: 'Delivered',
   completed: 'Completed',
   disputed: 'Disputed',
   refunded: 'Refunded',
@@ -26,24 +31,24 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 type PageProps = {
-  searchParams: Promise<{
-    reference?: string
-    trxref?: string
-    tab?: string
-    show?: string
-  }>
+  searchParams: Promise < {
+    reference ? : string
+    trxref ? : string
+    tab ? : string
+    show ? : string
+  } >
 }
 
 export default async function OrdersPage({ searchParams }: PageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
-
+  
   const params = await searchParams
   const reference = params.reference || params.trxref
   const tab = params.tab === 'selling' ? 'selling' : 'buying'
   const showAll = params.show === 'all'
-
+  
   if (reference) {
     if (reference.startsWith('cw_store_')) {
       await verifyStoreOrder(reference)
@@ -51,44 +56,43 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       await verifyPayment(reference)
     }
   }
-
+  
   const [{ data: buyingOrders }, { data: sellingOrders }] = await Promise.all([
     supabase
-      .from('orders')
-      .select(`
+    .from('orders')
+    .select(`
         *,
         listings!orders_listing_id_fkey(id, title, images, product_type),
         store_products!orders_store_product_id_fkey(id, title, images, product_type),
         stores!orders_store_id_fkey(id, store_name, slug, logo_url),
         seller:profiles!orders_seller_id_fkey(id, full_name, avatar_url)
       `)
-      .eq('buyer_id', user.id)
-      .order('created_at', { ascending: false }),
+    .eq('buyer_id', user.id)
+    .order('created_at', { ascending: false }),
     supabase
-      .from('orders')
-      .select(`
+    .from('orders')
+    .select(`
         *,
         listings!orders_listing_id_fkey(id, title, images, product_type),
         store_products!orders_store_product_id_fkey(id, title, images, product_type),
         stores!orders_store_id_fkey(id, store_name, slug, logo_url),
         buyer:profiles!orders_buyer_id_fkey(id, full_name, avatar_url)
       `)
-      .eq('seller_id', user.id)
-      .order('created_at', { ascending: false }),
+    .eq('seller_id', user.id)
+    .order('created_at', { ascending: false }),
   ])
-
+  
   const allBuying = buyingOrders ?? []
   const allSelling = sellingOrders ?? []
-
-  // By default hide completed and cancelled orders
+  
   const hiddenStatuses = ['completed', 'cancelled', 'refunded']
-  const buying = showAll
-    ? allBuying
-    : allBuying.filter((o) => !hiddenStatuses.includes(o.status))
-  const selling = showAll
-    ? allSelling
-    : allSelling.filter((o) => !hiddenStatuses.includes(o.status))
-
+  const buying = showAll ?
+    allBuying :
+    allBuying.filter((o) => !hiddenStatuses.includes(o.status))
+  const selling = showAll ?
+    allSelling :
+    allSelling.filter((o) => !hiddenStatuses.includes(o.status))
+  
   const hiddenBuyingCount = allBuying.filter((o) =>
     hiddenStatuses.includes(o.status)
   ).length
@@ -96,7 +100,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     hiddenStatuses.includes(o.status)
   ).length
   const hiddenCount = tab === 'buying' ? hiddenBuyingCount : hiddenSellingCount
-
+  
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
       <div className="border-b border-zinc-800 bg-zinc-900 px-4 py-5">
@@ -172,7 +176,6 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           ))
         )}
 
-        {/* Show/hide history toggle */}
         {hiddenCount > 0 && !showAll && (
           <Link
             href={`/orders?tab=${tab}&show=all`}
@@ -194,30 +197,31 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   )
 }
 
-function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) {
+function OrderCard({ order, role }: { order: any;role: 'buying' | 'selling' }) {
   const isStoreOrder = !!order.store_product_id
   const isDigital = !!order.digital_file_url
-
-  const title = isStoreOrder
-    ? (order.store_products?.title ?? 'Store Product')
-    : (order.listings?.title ?? 'Marketplace Item')
-
-  const image = isStoreOrder
-    ? order.store_products?.images?.[0]
-    : order.listings?.images?.[0]
-
+  
+  const title = isStoreOrder ?
+    (order.store_products?.title ?? 'Store Product') :
+    (order.listings?.title ?? 'Marketplace Item')
+  
+  const image = isStoreOrder ?
+    order.store_products?.images?.[0] :
+    order.listings?.images?.[0]
+  
   const storeName = order.stores?.store_name ?? null
   const storeLogo = order.stores?.logo_url ?? null
-
+  
   const postedDate = new Date(order.created_at).toLocaleDateString('en-NG', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   })
-
+  
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
-      <div className="flex gap-3 p-3">
+      {/* Tappable top section → order detail */}
+      <Link href={`/orders/${order.id}`} className="flex gap-3 p-3 hover:bg-zinc-800/50 transition-colors">
         <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-800">
           {image ? (
             <img src={image} alt={title} className="h-full w-full object-cover" />
@@ -278,8 +282,11 @@ function OrderCard({ order, role }: { order: any; role: 'buying' | 'selling' }) 
             </div>
           )}
         </div>
-      </div>
 
+        <ChevronRight className="h-4 w-4 text-zinc-600 shrink-0 self-center" />
+      </Link>
+
+      {/* Actions stay outside the link */}
       <OrderActions order={order} role={role} />
     </div>
   )

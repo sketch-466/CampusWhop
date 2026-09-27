@@ -134,13 +134,18 @@ export async function verifyPayment(reference: string) {
 
     const { data: order } = await supabase
       .from("orders")
-      .update({ status: "paid" })
+      .update({
+        status: "paid",
+        paid_at: new Date().toISOString(),
+      })
       .eq("paystack_reference", reference)
+      .eq("status", "pending")
       .select()
       .single();
 
     if (!order) {
-      return { error: "Order not found" };
+      // Already verified — idempotent
+      return { success: true };
     }
 
     const { data: listing } = await supabase
@@ -192,6 +197,7 @@ export async function acceptOrder(orderId: string) {
     .from("orders")
     .update({
       status: "accepted",
+      accepted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);
@@ -231,6 +237,7 @@ export async function markOrderDelivered(orderId: string) {
     .update({
       status: "shipped",
       shipped_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);
 
@@ -269,6 +276,7 @@ export async function confirmDelivery(orderId: string) {
     .update({
       status: "delivered",
       delivery_confirmed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);
 
@@ -304,6 +312,7 @@ export async function releaseEscrow(orderId: string) {
     .update({
       status: "completed",
       completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);
 
@@ -370,11 +379,6 @@ export async function releaseEscrow(orderId: string) {
       })
       .eq("id", orderId);
 
-    console.log(
-      "Transfer initiated for order:",
-      orderId,
-      transferResult.data.transfer_code
-    );
   } catch (err) {
     console.error("Payout transfer failed for order:", orderId, err);
   }
@@ -414,6 +418,7 @@ export async function disputeOrder(orderId: string, reason: string) {
     .update({
       status: "disputed",
       disputed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);
 
