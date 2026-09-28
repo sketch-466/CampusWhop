@@ -354,6 +354,12 @@ export default async function DashboardPage() {
             <h4 className="mt-2 text-sm font-medium text-white">Stores</h4>
             <p className="text-xs text-zinc-500">Browse student stores</p>
           </Link>
+          <Link href="/dashboard/transactions"
+            className="group rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-colors hover:border-zinc-700">
+            <Wallet className="h-6 w-6 text-emerald-500" />
+            <h4 className="mt-2 text-sm font-medium text-white">Transactions</h4>
+            <p className="text-xs text-zinc-500">Your financial history</p>
+          </Link>
         </div>
       </div>
 
