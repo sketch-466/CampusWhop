@@ -585,51 +585,7 @@ export async function resolveDispute(
   return { success: true };
 }
 
-export async function markRefundComplete(
-  orderId: string,
-  refundReference: string
-) {
-  const supabase = await createClient();
-  const adminClient = createAdminClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return { error: "Not authenticated" };
-
-  // Verify admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, is_admin")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin =
-    ["admin", "super_admin"].includes(profile?.role ?? "") ||
-    profile?.is_admin === true;
-
-  if (!isAdmin) return { error: "Unauthorized" };
-
-  const now = new Date().toISOString();
-
-  const { error } = await adminClient
-    .from("orders")
-    .update({
-      refund_status: "completed",
-      refund_reference: refundReference,
-      refunded_at: now,
-      updated_at: now,
-    })
-    .eq("id", orderId)
-    .eq("refund_status", "pending");
-
-  if (error) return { error: "Failed to mark refund complete" };
-
-  revalidatePath("/admin/refunds");
-  revalidatePath(`/orders/${orderId}`);
-  return { success: true };
-}
 export async function markRefundComplete(
   orderId: string,
   refundReference: string
