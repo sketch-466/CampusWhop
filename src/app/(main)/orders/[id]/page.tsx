@@ -4,6 +4,15 @@ import Link from 'next/link'
 import { ArrowLeft, CheckCircle, Circle, Clock, Package, ShieldAlert, Truck, Wallet } from 'lucide-react'
 import OrderActions from '@/components/shared/order-actions'
 
+const REASON_LABELS: Record<string, string> = {
+  item_not_received: 'Item not received',
+  item_not_as_described: 'Item not as described',
+  seller_unresponsive: 'Seller unresponsive',
+  wrong_item: 'Wrong item delivered',
+  damaged_item: 'Item arrived damaged',
+  other: 'Other',
+}
+
 type Props = { params: Promise<{ id: string }> }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -97,6 +106,15 @@ export default async function OrderDetailPage({ params }: Props) {
   const isSeller = order.seller_id === user.id
   if (!isBuyer && !isSeller) notFound()
 
+  // Fetch dispute if order is disputed
+  const { data: dispute } = order.status === 'disputed'
+    ? await supabase
+        .from('disputes')
+        .select('id, reason, description, status, resolution, resolution_notes, refund_amount, created_at, resolved_at')
+        .eq('order_id', id)
+        .maybeSingle()
+    : { data: null }
+
   const role = isBuyer ? 'buying' : 'selling'
   const isStoreOrder = !!order.store_product_id
   const isDigital = !!order.digital_file_url
@@ -141,26 +159,102 @@ export default async function OrderDetailPage({ params }: Props) {
 
         {/* Exception State Banner */}
         {order.status === 'disputed' && (
-          <div className="rounded-xl border border-red-800/40 bg-red-900/10 p-4 flex items-start gap-3">
-            <ShieldAlert className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-red-400">Under Admin Review</p>
-              <p className="text-xs text-red-400/70 mt-0.5">
-                A dispute has been opened on this order. Our team will review and reach out.
-              </p>
+          <div className="rounded-xl border border-red-800/40 bg-red-900/10 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-400">Under Admin Review</p>
+                <p className="text-xs text-red-400/70 mt-0.5">
+                  A dispute has been opened on this order. Our team will review and reach out.
+                </p>
+              </div>
             </div>
+
+            {dispute && (
+              <div className="rounded-lg border border-red-900/30 bg-zinc-900/50 px-3 py-2 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-500">Reason:</span>
+                  <span className="text-xs text-zinc-300">
+                    {REASON_LABELS[dispute.reason] ?? dispute.reason}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  {dispute.description}
+                </p>
+                <p className="text-[10px] text-zinc-600">
+                  Opened {formatDate(dispute.created_at)}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {order.status === 'refunded' && (
-          <div className="rounded-xl border border-zinc-700 bg-zinc-800/30 p-4 flex items-start gap-3">
-            <Wallet className="h-5 w-5 text-zinc-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-zinc-300">Refunded</p>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                This order has been refunded.
-              </p>
+          <div className="rounded-xl border border-zinc-700 bg-zinc-800/30 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Wallet className="h-5 w-5 text-zinc-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-zinc-300">Refund Initiated</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Your refund has been approved and is being processed.
+                </p>
+              </div>
             </div>
+
+            {/* Refund status breakdown */}
+            <div className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Refund amount</span>
+                <span className="text-zinc-200 font-semibold">
+                  {order.refund_amount
+                    ? `₦${order.refund_amount.toLocaleString()}`
+                    : `₦${order.amount.toLocaleString()}`}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Refund status</span>
+                <span className={
+                  order.refund_status === 'completed'
+                    ? 'text-emerald-400 font-medium'
+                    : order.refund_status === 'processing'
+                    ? 'text-blue-400 font-medium'
+                    : order.refund_status === 'failed'
+                    ? 'text-red-400 font-medium'
+                    : 'text-yellow-400 font-medium'
+                }>
+                  {order.refund_status === 'completed'
+                    ? '✓ Completed'
+                    : order.refund_status === 'processing'
+                    ? 'Processing...'
+                    : order.refund_status === 'failed'
+                    ? 'Failed — contact support'
+                    : 'Pending'}
+                </span>
+              </div>
+              {order.refund_reference && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500">Reference</span>
+                  <span className="text-zinc-400 font-mono">
+                    {order.refund_reference}
+                  </span>
+                </div>
+              )}
+              {order.refunded_at && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500">Completed</span>
+                  <span className="text-zinc-400">
+                    {formatDate(order.refunded_at)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Buyer guidance */}
+            {order.refund_status !== 'completed' && (
+              <p className="text-xs text-zinc-600">
+                Refunds typically reflect within 3–5 business days depending on your bank.
+              </p>
+            )}
           </div>
         )}
 

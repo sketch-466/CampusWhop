@@ -16,6 +16,7 @@ const adminNav = [
   { href: "/admin/referrals", label: "Referrals" },
   { href: "/admin/verification", label: "Verification" },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/refunds", label: "Refunds" },
 ];
 
 const ADMIN_ROLES = ["admin", "super_admin"];

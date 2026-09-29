@@ -387,8 +387,13 @@ export async function releaseEscrow(orderId: string) {
   return { success: true };
 }
 
-export async function disputeOrder(orderId: string, reason: string) {
+export async function disputeOrder(
+  orderId: string,
+  reason: string,
+  description: string
+) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const {
     data: { user },
@@ -413,7 +418,35 @@ export async function disputeOrder(orderId: string, reason: string) {
     return { error: "Order cannot be disputed" };
   }
 
-  await supabase
+  // Check no existing open dispute for this order
+  const { data: existing } = await supabase
+    .from("disputes")
+    .select("id")
+    .eq("order_id", orderId)
+    .maybeSingle();
+
+  if (existing) {
+    return { error: "A dispute already exists for this order" };
+  }
+
+  // Create dispute record
+  const { error: disputeError } = await adminClient
+    .from("disputes")
+    .insert({
+      order_id: orderId,
+      buyer_id: user.id,
+      seller_id: order.seller_id,
+      reason,
+      description,
+      status: "open",
+    });
+
+  if (disputeError) {
+    return { error: "Failed to open dispute" };
+  }
+
+  // Mark order as disputed
+  await adminClient
     .from("orders")
     .update({
       status: "disputed",
@@ -423,6 +456,7 @@ export async function disputeOrder(orderId: string, reason: string) {
     .eq("id", orderId);
 
   revalidatePath("/orders");
+  revalidatePath(`/orders/${orderId}`);
   return { success: true };
 }
 
@@ -462,4 +496,182 @@ export async function getUserOrders() {
     buying: buying || [],
     selling: selling || [],
   };
+}
+
+export async function resolveDispute(
+  disputeId: string,
+  resolution: string,
+  resolutionNotes: string,
+  refundAmount?: number
+) {
+  const supabase = await createClient();
+  const adminClient = createAdminClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify admin
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_admin")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin =
+    ["admin", "super_admin"].includes(profile?.role ?? "") ||
+    profile?.is_admin === true;
+
+  if (!isAdmin) return { error: "Unauthorized" };
+
+  // Get dispute
+  const { data: dispute } = await adminClient
+    .from("disputes")
+    .select("*, order:orders(id, status, amount)")
+    .eq("id", disputeId)
+    .single();
+
+  if (!dispute) return { error: "Dispute not found" };
+  if (dispute.status === "resolved") return { error: "Dispute already resolved" };
+
+  const now = new Date().toISOString();
+  const isRefund =
+    resolution === "full_refund" || resolution === "partial_refund";
+
+  // Calculate actual refund amount
+  const order = Array.isArray(dispute.order) ? dispute.order[0] : dispute.order;
+  const actualRefundAmount =
+    resolution === "full_refund"
+      ? order?.amount ?? refundAmount
+      : refundAmount ?? null;
+
+  // Resolve dispute record
+  const { error: updateError } = await adminClient
+    .from("disputes")
+    .update({
+      status: "resolved",
+      resolution,
+      resolution_notes: resolutionNotes,
+      refund_amount: actualRefundAmount ?? null,
+      resolved_by: user.id,
+      resolved_at: now,
+      updated_at: now,
+    })
+    .eq("id", disputeId);
+
+  if (updateError) return { error: "Failed to resolve dispute" };
+
+  // Update order with status + refund columns
+  const orderUpdate: Record<string, unknown> = {
+    status: isRefund ? "refunded" : "completed",
+    updated_at: now,
+  };
+
+  if (isRefund) {
+    orderUpdate.refund_status = "pending";
+    orderUpdate.refund_amount = actualRefundAmount;
+  }
+
+  await adminClient
+    .from("orders")
+    .update(orderUpdate)
+    .eq("id", dispute.order_id);
+
+  revalidatePath("/admin/disputes");
+  revalidatePath("/admin/refunds");
+  revalidatePath(`/orders/${dispute.order_id}`);
+  return { success: true };
+}
+
+export async function markRefundComplete(
+  orderId: string,
+  refundReference: string
+) {
+  const supabase = await createClient();
+  const adminClient = createAdminClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify admin
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_admin")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin =
+    ["admin", "super_admin"].includes(profile?.role ?? "") ||
+    profile?.is_admin === true;
+
+  if (!isAdmin) return { error: "Unauthorized" };
+
+  const now = new Date().toISOString();
+
+  const { error } = await adminClient
+    .from("orders")
+    .update({
+      refund_status: "completed",
+      refund_reference: refundReference,
+      refunded_at: now,
+      updated_at: now,
+    })
+    .eq("id", orderId)
+    .eq("refund_status", "pending");
+
+  if (error) return { error: "Failed to mark refund complete" };
+
+  revalidatePath("/admin/refunds");
+  revalidatePath(`/orders/${orderId}`);
+  return { success: true };
+}
+export async function markRefundComplete(
+  orderId: string,
+  refundReference: string
+) {
+  const supabase = await createClient();
+  const adminClient = createAdminClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify admin
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_admin")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin =
+    ["admin", "super_admin"].includes(profile?.role ?? "") ||
+    profile?.is_admin === true;
+
+  if (!isAdmin) return { error: "Unauthorized" };
+
+  const now = new Date().toISOString();
+
+  const { error } = await adminClient
+    .from("orders")
+    .update({
+      refund_status: "completed",
+      refund_reference: refundReference,
+      refunded_at: now,
+      updated_at: now,
+    })
+    .eq("id", orderId)
+    .eq("refund_status", "pending");
+
+  if (error) return { error: "Failed to mark refund complete" };
+
+  revalidatePath("/admin/refunds");
+  revalidatePath(`/orders/${orderId}`);
+  return { success: true };
 }

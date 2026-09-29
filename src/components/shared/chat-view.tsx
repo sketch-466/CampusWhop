@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Package } from "lucide-react";
 import { sendMessage } from "@/lib/actions/messages";
 import { createClient } from "@/lib/supabase/client";
 
@@ -25,6 +24,7 @@ interface Conversation {
   participant_one: string;
   participant_two: string;
   listing_id: string | null;
+  order_id: string | null;
   listings?: {
     id: string;
     title: string;
@@ -48,7 +48,6 @@ export default function ChatView({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   const bottomRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -72,7 +71,6 @@ export default function ChatView({
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => {
-            // Avoid duplicates
             if (prev.find((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
@@ -114,8 +112,11 @@ export default function ChatView({
       : conversation.listings
     : null;
 
+  const orderId = conversation?.order_id ?? null;
+
   return (
     <div className="flex flex-col h-screen bg-zinc-950">
+
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-zinc-800 bg-zinc-900 px-4 py-3 flex-shrink-0">
         <Link href="/messages" className="text-zinc-400 hover:text-white">
@@ -146,6 +147,20 @@ export default function ChatView({
           </Link>
         )}
       </div>
+
+      {/* Order context banner */}
+      {orderId && (
+        <Link
+          href={`/orders/${orderId}`}
+          className="flex items-center gap-2.5 border-b border-zinc-800 bg-zinc-900/50 px-4 py-2 hover:bg-zinc-800/50 transition-colors"
+        >
+          <Package className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+          <p className="text-xs text-zinc-400">
+            This conversation is linked to an order —{" "}
+            <span className="text-emerald-400 font-medium">View order →</span>
+          </p>
+        </Link>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
