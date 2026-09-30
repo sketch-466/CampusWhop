@@ -21,17 +21,18 @@ export function ShareListingButton({
 
   const url = `https://campuswhop.com/marketplace/${id}`;
 
-  // Trim description to 200 chars to keep caption clean
+  // Use seller's description as the lead — trim to 220 chars
   const shortDescription =
-    description.length > 200
-      ? description.slice(0, 200).trim() + "..."
-      : description;
+    description.length > 220
+      ? description.slice(0, 220).trim() + "..."
+      : description.trim();
 
+  // Caption feels like a real person sharing, not an automated post
   const caption =
-    `🛍️ *${title}* — ₦${price.toLocaleString()}\n\n` +
     `${shortDescription}\n\n` +
-    `👉 ${url}\n\n` +
-    `_Listed on CampusWhop — The Campus Economy_`;
+    `*${title}* — ₦${price.toLocaleString()}\n\n` +
+    `To order or ask questions 👇\n` +
+    `${url}`;
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(caption)}`;
 
@@ -41,7 +42,6 @@ export function ShareListingButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older Android browsers
       const el = document.createElement("textarea");
       el.value = caption;
       el.style.position = "fixed";
@@ -104,7 +104,6 @@ export function ShareListingButton({
 
             {/* Actions */}
             <div className="space-y-2">
-              {/* WhatsApp direct share */}
               <a
                 href={whatsappUrl}
                 target="_blank"
@@ -115,7 +114,6 @@ export function ShareListingButton({
                 Share on WhatsApp
               </a>
 
-              {/* Copy caption */}
               <button
                 onClick={handleCopy}
                 className={`flex w-full items-center justify-center gap-2 rounded-xl border py-3.5 text-sm font-medium transition-colors ${
@@ -139,7 +137,7 @@ export function ShareListingButton({
             </div>
 
             <p className="mt-4 text-center text-xs text-zinc-600">
-              Share in WhatsApp groups to get more buyers
+              Share in WhatsApp groups, status, or send directly
             </p>
           </div>
         </div>
