@@ -15,20 +15,13 @@ import {
 } from "@/components/ui/card";
 import { onboardingSchema, type OnboardingInput } from "@/lib/validations/auth";
 import { completeOnboarding } from "@/lib/actions/auth";
+import {
+  MATRIC_FORMATS,
+  SUPPORTED_INSTITUTIONS,
+  getInstitutionKey,
+  validateMatric,
+} from "@/lib/institutions/matric";
 import { cn } from "@/lib/utils";
-
-const NIGERIAN_UNIVERSITIES = [
-  "Federal University Ndufu-Alike Ikwo (FUNAI)",
-  "University of Nigeria, Nsukka (UNN)",
-  "Nnamdi Azikiwe University, Awka (UNIZIK)",
-  "Ebonyi State University, Abakaliki (EBSU)",
-  "Enugu State University of Science and Technology (ESUT)",
-  "Imo State University, Owerri (IMSU)",
-  "Abia State University, Uturu (ABSU)",
-  "Anambra State University, Uli (ANSU)",
-  "Federal University of Technology, Owerri (FUTO)",
-  "Michael Okpara University of Agriculture, Umudike (MOUAU)",
-];
 
 interface OnboardingFormProps {
   defaultFullName?: string;
@@ -44,37 +37,54 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
     formState: { errors },
     watch,
     setValue,
+    setError: setFieldError,
   } = useForm<OnboardingInput>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       fullName: defaultFullName,
-      university: NIGERIAN_UNIVERSITIES[0],
+      university: SUPPORTED_INSTITUTIONS[0].name,
       matricNumber: "",
       phoneNumber: "",
     },
   });
 
   const selectedUniversity = watch("university");
+  const institutionKey = getInstitutionKey(selectedUniversity);
+  const matricFormat = institutionKey ? MATRIC_FORMATS[institutionKey] : null;
 
   const onSubmit = async (data: OnboardingInput) => {
-    setIsLoading(true);
     setError(undefined);
+
+    // UX-only check. The server action remains authoritative.
+    const key = getInstitutionKey(data.university);
+    if (!key) {
+      setFieldError("university", { message: "Unsupported university" });
+      return;
+    }
+    const check = validateMatric(key, data.matricNumber);
+    if (!check.ok) {
+      setFieldError("matricNumber", { message: check.error });
+      return;
+    }
+
+    setIsLoading(true);
 
     const result = await completeOnboarding({
       fullName: data.fullName,
       university: data.university,
-      matricNumber: data.matricNumber,
+      matricNumber: check.value,
       phoneNumber: data.phoneNumber || undefined,
     });
 
     if (result?.error) {
-      // Surface DB-level errors clearly
       if (result.error.includes("profiles_matric_number_unique")) {
         setError("This matric number is already registered to another account.");
       } else if (result.error.includes("profiles_phone_number_unique")) {
         setError("This phone number is already registered to another account.");
       } else if (result.error.includes("profiles_matric_format_check")) {
-        setError("Invalid matric number format. Use YYYY/XX/NNNNN (e.g. 2023/EN/32845).");
+        setError(
+          matricFormat?.errorMessage ?? "Invalid matric number format."
+        );
       } else if (result.error.includes("profiles_phone_format_check")) {
         setError("Invalid phone number format. Use 08012345678 or +2348012345678.");
       } else if (result.error.includes("deleted account")) {
@@ -128,9 +138,9 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
               value={selectedUniversity}
               onChange={(e) => setValue("university", e.target.value)}
             >
-              {NIGERIAN_UNIVERSITIES.map((uni) => (
-                <option key={uni} value={uni}>
-                  {uni}
+              {SUPPORTED_INSTITUTIONS.map((uni) => (
+                <option key={uni.key} value={uni.name}>
+                  {uni.name}
                 </option>
               ))}
             </select>
@@ -146,14 +156,16 @@ export function OnboardingForm({ defaultFullName = "" }: OnboardingFormProps) {
             <Label htmlFor="matricNumber">Matric Number</Label>
             <Input
               id="matricNumber"
-              placeholder="e.g. 2023/EN/32845"
+              placeholder={`e.g. ${matricFormat?.placeholder ?? ""}`}
               autoCapitalize="characters"
               {...register("matricNumber")}
               className={cn(errors.matricNumber && "border-destructive")}
             />
-            <p className="text-xs text-muted-foreground">
-              Format: YEAR/FACULTY/NUMBER (e.g. 2023/EN/32845)
-            </p>
+            {matricFormat && (
+              <p className="text-xs text-muted-foreground">
+                {matricFormat.helpText}
+              </p>
+            )}
             {errors.matricNumber && (
               <p className="text-sm text-destructive">
                 {errors.matricNumber.message}

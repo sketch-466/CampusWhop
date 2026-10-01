@@ -14,6 +14,7 @@ import {
   registerSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  onboardingSchema,
   type LoginInput,
   type RegisterInput,
   type ForgotPasswordInput,
@@ -419,14 +420,25 @@ export async function completeOnboarding(formData: {
     return { error: "Not authenticated" };
   }
 
+  // Authoritative server-side validation: institution + matric as a pair.
+  const validated = onboardingSchema.safeParse({
+    ...formData,
+    phoneNumber: formData.phoneNumber ?? "",
+  });
+  if (!validated.success) {
+    return { error: validated.error.errors[0].message };
+  }
+
+  const { fullName, university, matricNumber, phoneNumber } = validated.data;
+
   const adminClient = createAdminClient();
   const { error: profileError } = await adminClient
     .from("profiles")
     .update({
-      full_name: formData.fullName,
-      university: formData.university,
-      matric_number: formData.matricNumber,
-      phone_number: formData.phoneNumber || null,
+      full_name: fullName,
+      university,
+      matric_number: matricNumber,
+      phone_number: phoneNumber || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", user.id);
