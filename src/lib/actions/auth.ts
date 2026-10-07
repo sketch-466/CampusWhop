@@ -167,8 +167,19 @@ export async function verifyEmail(token: string) {
   return { success: true, redirect: "/onboarding" };
 }
 
-export async function resendVerificationEmail(userId: string) {
+export async function resendVerificationEmail() {
+  const supabase = await createClient();
   const adminClient = createAdminClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const userId = user.id;
 
   const { data: recentTokens } = await adminClient
     .from("email_verification_tokens")
@@ -180,6 +191,7 @@ export async function resendVerificationEmail(userId: string) {
   if (recentTokens && recentTokens.length > 0) {
     const lastCreated = new Date(recentTokens[0].created_at);
     const secondsSince = (Date.now() - lastCreated.getTime()) / 1000;
+
     if (secondsSince < 60) {
       return {
         error: `Please wait ${Math.ceil(60 - secondsSince)} seconds before requesting another email`,
@@ -213,6 +225,7 @@ export async function resendVerificationEmail(userId: string) {
   }
 
   const verifyUrl = `${SITE_URL}/verify?token=${token}`;
+
   try {
     await resend.emails.send({
       from: "CampusWhop <noreply@campuswhop.com>",
@@ -432,6 +445,34 @@ export async function completeOnboarding(formData: {
   const { fullName, university, matricNumber, phoneNumber } = validated.data;
 
   const adminClient = createAdminClient();
+
+  // Identity lock: once verification is pending or verified, the institution
+  // and matric number can no longer be changed through onboarding.
+  const { data: existing, error: existingError } = await adminClient
+    .from("profiles")
+    .select("university, matric_number, verification_status")
+    .eq("id", user.id)
+    .single();
+
+  if (existingError || !existing) {
+    return { error: "Profile not found" };
+  }
+
+  const identityLocked =
+    existing.verification_status === "pending" ||
+    existing.verification_status === "verified";
+
+  if (
+    identityLocked &&
+    (existing.university !== university ||
+      existing.matric_number !== matricNumber)
+  ) {
+    return {
+      error:
+        "Your university and matric number are locked once verification is submitted. Contact support to change them.",
+    };
+  }
+
   const { error: profileError } = await adminClient
     .from("profiles")
     .update({

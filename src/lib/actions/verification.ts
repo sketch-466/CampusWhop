@@ -26,6 +26,94 @@ export interface VerificationRecord {
   verified_at: string | null
 }
 
+// ─── Internal helpers (not exported) ─────────────────────
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const VERIFICATION_BUCKET = "verification-docs"
+const MAX_REJECTION_REASON_LENGTH = 1000
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_REGEX.test(value)
+}
+
+type AdminCheck =
+  | { ok: true; userId: string }
+  | { ok: false; reason: "unauthenticated" | "unauthorized" }
+
+/**
+ * Authenticates the current session and authorizes it as an admin.
+ * Accepts role "admin" | "super_admin" OR legacy is_admin === true.
+ * createAdminClient() must only be called AFTER this returns ok: true.
+ */
+async function requireAdmin(): Promise<AdminCheck> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, reason: "unauthenticated" }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_admin")
+    .eq("id", user.id)
+    .single()
+
+  const isAuthorized =
+    profile?.role === "admin" ||
+    profile?.role === "super_admin" ||
+    profile?.is_admin === true
+
+  if (!isAuthorized) return { ok: false, reason: "unauthorized" }
+  return { ok: true, userId: user.id }
+}
+
+/**
+ * Normalizes a stored verification_docs value to a bare storage path
+ * (<userId>/<filename>). Handles bare paths and full Supabase storage URLs.
+ */
+function toStoragePath(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const pathname = decodeURIComponent(new URL(trimmed).pathname)
+      const marker = `/${VERIFICATION_BUCKET}/`
+      const idx = pathname.indexOf(marker)
+      if (idx === -1) return null
+      return pathname.slice(idx + marker.length) || null
+    } catch {
+      return null
+    }
+  }
+
+  return trimmed
+}
+
+/**
+ * Validates that a path is exactly "<uuid>/<filename>" with no traversal.
+ * Returns the target user id, or null if the path is malformed.
+ */
+function parseDocumentPath(path: unknown): { userId: string } | null {
+  if (typeof path !== "string") return null
+  if (!path || path.length > 300) return null
+  if (path.startsWith("/") || path.includes("\\") || path.includes("..")) return null
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1f]/.test(path)) return null
+
+  const segments = path.split("/")
+  if (segments.length !== 2) return null
+
+  const [userId, fileName] = segments
+  if (!isUuid(userId)) return null
+  if (!fileName || fileName === "." || fileName === "..") return null
+
+  return { userId }
+}
+
 // ─── Student: Get own verification status ────────────────
 
 export async function getVerificationStatus(): Promise<{
@@ -134,17 +222,8 @@ export async function adminGetPendingVerifications(): Promise<{
   verification_status: VerificationStatus
   created_at: string
 }[]> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data: adminCheck } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single()
-
-  if (!adminCheck?.is_admin) return []
+  const auth = await requireAdmin()
+  if (!auth.ok) return []
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -171,17 +250,8 @@ export async function adminGetAllVerifications(status?: VerificationStatus): Pro
   verification_rejection_reason: string | null
   created_at: string
 }[]> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data: adminCheck } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single()
-
-  if (!adminCheck?.is_admin) return []
+  const auth = await requireAdmin()
+  if (!auth.ok) return []
 
   const admin = createAdminClient()
   let query = admin
@@ -203,19 +273,26 @@ export async function adminGetAllVerifications(status?: VerificationStatus): Pro
 export async function adminApproveVerification(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: "Not authenticated" }
+  const auth = await requireAdmin()
+  if (!auth.ok) {
+    return {
+      success: false,
+      error: auth.reason === "unauthenticated" ? "Not authenticated" : "Unauthorized",
+    }
+  }
 
-  const { data: adminCheck } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single()
-
-  if (!adminCheck?.is_admin) return { success: false, error: "Unauthorized" }
+  if (!isUuid(userId)) return { success: false, error: "Invalid user ID" }
 
   const admin = createAdminClient()
+
+  const { data: target, error: targetError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (targetError || !target) return { success: false, error: "User not found" }
+
   const { error } = await admin
     .from("profiles")
     .update({
@@ -223,7 +300,7 @@ export async function adminApproveVerification(
       verified_at: new Date().toISOString(),
       verification_rejection_reason: null,
     })
-    .eq("id", userId)
+    .eq("id", target.id)
 
   if (error) return { success: false, error: "Failed to approve" }
 
@@ -237,27 +314,43 @@ export async function adminRejectVerification(
   userId: string,
   reason: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: "Not authenticated" }
+  const auth = await requireAdmin()
+  if (!auth.ok) {
+    return {
+      success: false,
+      error: auth.reason === "unauthenticated" ? "Not authenticated" : "Unauthorized",
+    }
+  }
 
-  const { data: adminCheck } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single()
+  if (!isUuid(userId)) return { success: false, error: "Invalid user ID" }
 
-  if (!adminCheck?.is_admin) return { success: false, error: "Unauthorized" }
+  const cleanReason = typeof reason === "string" ? reason.trim() : ""
+  if (!cleanReason) return { success: false, error: "Rejection reason is required" }
+  if (cleanReason.length > MAX_REJECTION_REASON_LENGTH) {
+    return {
+      success: false,
+      error: `Rejection reason must be ${MAX_REJECTION_REASON_LENGTH} characters or fewer`,
+    }
+  }
 
   const admin = createAdminClient()
+
+  const { data: target, error: targetError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (targetError || !target) return { success: false, error: "User not found" }
+
   const { error } = await admin
     .from("profiles")
     .update({
       verification_status: "rejected",
-      verification_rejection_reason: reason,
+      verification_rejection_reason: cleanReason,
       verified_at: null,
     })
-    .eq("id", userId)
+    .eq("id", target.id)
 
   if (error) return { success: false, error: "Failed to reject" }
 
@@ -270,21 +363,39 @@ export async function adminRejectVerification(
 export async function adminGetDocumentUrl(
   path: string
 ): Promise<{ url: string } | { error: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Not authenticated" }
+  const auth = await requireAdmin()
+  if (!auth.ok) {
+    return {
+      error: auth.reason === "unauthenticated" ? "Not authenticated" : "Unauthorized",
+    }
+  }
 
-  const { data: adminCheck } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single()
-
-  if (!adminCheck?.is_admin) return { error: "Unauthorized" }
+  const parsed = parseDocumentPath(path)
+  if (!parsed) return { error: "Invalid document path" }
 
   const admin = createAdminClient()
+
+  const { data: target, error: targetError } = await admin
+    .from("profiles")
+    .select("verification_docs")
+    .eq("id", parsed.userId)
+    .maybeSingle()
+
+  if (targetError || !target) return { error: "Document not found" }
+
+  const docs = target.verification_docs as
+    | { documentUrl?: unknown; selfieUrl?: unknown }
+    | null
+
+  const allowedPaths = [
+    toStoragePath(docs?.documentUrl),
+    toStoragePath(docs?.selfieUrl),
+  ].filter((p): p is string => p !== null)
+
+  if (!allowedPaths.includes(path)) return { error: "Document not found" }
+
   const { data, error } = await admin.storage
-    .from("verification-docs")
+    .from(VERIFICATION_BUCKET)
     .createSignedUrl(path, 60 * 10) // 10 min expiry
 
   if (error || !data) return { error: "Failed to get document URL" }
